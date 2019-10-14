@@ -1,68 +1,72 @@
 import classNames from 'classnames';
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { cloneElement } from 'react';
+import elementType from 'prop-types-extra/lib/elementType';
 
-import { useUncontrolled } from 'uncontrollable';
-
-import { useBootstrapPrefix } from './ThemeProvider';
-import AbstractNav from './AbstractNav';
 import ListGroupItem from './ListGroupItem';
+import { bsClass, getClassSet, splitBsProps } from './utils/bootstrapUtils';
+import ValidComponentChildren from './utils/ValidComponentChildren';
 
 const propTypes = {
   /**
-   * @default 'list-group'
-   */
-  bsPrefix: PropTypes.string,
-
-  /**
-   * Adds a variant to the list-group
-   *
-   * @type {('flush')}
-   */
-  variant: PropTypes.oneOf(['flush', null]),
-
-  /**
    * You can use a custom element type for this component.
+   *
+   * If not specified, it will be treated as `'li'` if every child is a
+   * non-actionable `<ListGroupItem>`, and `'div'` otherwise.
    */
-  as: PropTypes.elementType,
+  componentClass: elementType
 };
 
-const defaultProps = {
-  variant: null,
-};
+function getDefaultComponent(children) {
+  if (!children) {
+    // FIXME: This is the old behavior. Is this right?
+    return 'div';
+  }
 
-const ListGroup = React.forwardRef((props, ref) => {
-  let {
-    className,
-    bsPrefix,
-    variant,
-    // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-    as = 'div',
-    ...controlledProps
-  } = useUncontrolled(props, {
-    activeKey: 'onSelect',
-  });
+  if (
+    ValidComponentChildren.some(
+      children,
+      child =>
+        child.type !== ListGroupItem || child.props.href || child.props.onClick
+    )
+  ) {
+    return 'div';
+  }
 
-  bsPrefix = useBootstrapPrefix(bsPrefix, 'list-group');
+  return 'ul';
+}
 
-  return (
-    <AbstractNav
-      ref={ref}
-      {...controlledProps}
-      as={as}
-      className={classNames(
-        className,
-        bsPrefix,
-        variant && `${bsPrefix}-${variant}`,
-      )}
-    />
-  );
-});
+class ListGroup extends React.Component {
+  render() {
+    const {
+      children,
+      componentClass: Component = getDefaultComponent(children),
+      className,
+      ...props
+    } = this.props;
+
+    const [bsProps, elementProps] = splitBsProps(props);
+
+    const classes = getClassSet(bsProps);
+
+    const useListItem =
+      Component === 'ul' &&
+      ValidComponentChildren.every(
+        children,
+        child => child.type === ListGroupItem
+      );
+
+    return (
+      <Component {...elementProps} className={classNames(className, classes)}>
+        {useListItem
+          ? ValidComponentChildren.map(children, child =>
+              cloneElement(child, { listItem: true })
+            )
+          : children}
+      </Component>
+    );
+  }
+}
 
 ListGroup.propTypes = propTypes;
-ListGroup.defaultProps = defaultProps;
-ListGroup.displayName = 'ListGroup';
 
-ListGroup.Item = ListGroupItem;
-
-export default ListGroup;
+export default bsClass('list-group', ListGroup);

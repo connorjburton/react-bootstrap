@@ -4,50 +4,78 @@ const webpack = require('webpack');
 const path = require('path');
 const fse = require('fs-extra');
 const execa = require('execa');
-const cherryPick = require('cherry-pick').default;
 const getConfig = require('./dist.webpack.config');
 
 const targets = process.argv.slice(2);
+const stdio = ['pipe', 'pipe', 'inherit'];
 
-const srcRoot = path.join(__dirname, '../src');
-const typesRoot = path.join(__dirname, '../types');
+const srcRoot = path.join(__dirname, '../src/');
+const distRoot = path.join(__dirname, '../dist/');
+const libRoot = path.join(__dirname, '../lib/');
+const esRoot = path.join(__dirname, '../es/');
+const bowerRoot = path.join(__dirname, '../amd/');
 
-const libRoot = path.join(__dirname, '../lib');
-const distRoot = path.join(libRoot, 'dist');
-const cjsRoot = path.join(libRoot, 'cjs');
-const esRoot = path.join(libRoot, 'esm');
+const clean = async dir => fse.existsSync(dir) && fse.remove(dir);
 
-const clean = () => fse.existsSync(libRoot) && fse.removeSync(libRoot);
-
-const step = (name, fn) => async () => {
+const step = (name, root, fn) => async () => {
   console.log(cyan('Building: ') + green(name));
+  await clean(root);
   await fn();
   console.log(cyan('Built: ') + green(name));
 };
 
-const shell = cmd =>
-  execa(cmd, { stdio: ['pipe', 'pipe', 'inherit'], shell: true });
-
 const has = t => !targets.length || targets.includes(t);
-
-const copyTypes = dest => shell(`cpy ${typesRoot}/components/*.d.ts ${dest}`);
 
 /**
  * Run babel over the src directory and output
  * compiled common js files to ./lib.
  */
-const buildLib = step('commonjs modules', async () => {
-  await shell(`npx babel ${srcRoot} --out-dir ${cjsRoot} --env-name "cjs"`);
-  await copyTypes(libRoot);
-});
+const buildLib = step('commonjs modules', libRoot, () =>
+  execa.shell(`npx babel ${srcRoot} --out-dir ${libRoot} --env-name "lib"`, {
+    stdio
+  })
+);
 
 /**
  * Run babel over the src directory and output
  * compiled es modules (but otherwise es5) to /es
  */
-const buildEsm = step('es modules', async () => {
-  await shell(`npx babel ${srcRoot} --out-dir ${esRoot} --env-name "esm"`);
-  await copyTypes(esRoot);
+const buildEsm = step('es modules', esRoot, () =>
+  execa.shell(`npx babel ${srcRoot} --out-dir ${esRoot} --env-name "esm"`, {
+    stdio
+  })
+);
+
+/**
+ * Builds a `bower.json` file and outputs it to /amd.
+ * Actual code is copied by the buildDist step
+ */
+const buildBower = step('browser package', bowerRoot, async () => {
+  const pkgJson = require('../package.json');
+
+  await fse.copy(
+    path.resolve(__dirname, '../README.md'),
+    path.join(bowerRoot, 'README.md')
+  );
+
+  await fse.writeJson(
+    path.join(bowerRoot, 'bower.json'),
+    {
+      name: pkgJson.name,
+      version: pkgJson.version,
+      homepage: pkgJson.homepage,
+      author: pkgJson.author,
+      license: pkgJson.license,
+      main: ['react-bootstrap.js'],
+      keywords: pkgJson.keywords,
+      ignore: ['**/.*'],
+      dependencies: {
+        react: pkgJson.peerDependencies.react,
+        'react-dom': pkgJson.peerDependencies['react-dom']
+      }
+    },
+    { spaces: 2 }
+  );
 });
 
 /**
@@ -56,6 +84,7 @@ const buildEsm = step('es modules', async () => {
  */
 const buildDist = step(
   'browser distributable',
+  distRoot,
   () =>
     new Promise((resolve, reject) => {
       webpack(
@@ -66,34 +95,26 @@ const buildDist = step(
             return;
           }
 
-          resolve();
-        },
-      );
-    }),
-);
+          if (has('bower')) {
+            await fse.copy(distRoot, bowerRoot);
+          }
 
-const buildDirectories = step('Linking directories', () =>
-  cherryPick({
-    inputDir: '../src',
-    cjsDir: 'cjs',
-    esmDir: 'esm',
-    cwd: libRoot,
-  }),
+          resolve();
+        }
+      );
+    })
 );
 
 console.log(
-  green(`Building targets: ${targets.length ? targets.join(', ') : 'all'}\n`),
+  green(`Building targets: ${targets.length ? targets.join(', ') : 'all'}\n`)
 );
-
-clean();
 
 Promise.all([
   has('lib') && buildLib(),
   has('es') && buildEsm(),
-  has('dist') && buildDist(),
-])
-  .then(buildDirectories)
-  .catch(err => {
-    if (err) console.error(red(err.stack || err.toString()));
-    process.exit(1);
-  });
+  has('bower') && buildBower(),
+  (has('dist') || has('bower')) && buildDist()
+]).catch(err => {
+  if (err) console.error(red(err.stack || err.toString()));
+  process.exit(1);
+});

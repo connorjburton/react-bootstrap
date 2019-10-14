@@ -1,18 +1,32 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import Row from '../src/Row';
 
 describe('Row', () => {
   it('uses "div" by default', () => {
-    mount(
-      <Row className="custom-class">
-        <strong>Children</strong>
-      </Row>,
-    ).assertSingle('div.row.custom-class strong');
+    let instance = ReactTestUtils.renderIntoDocument(<Row />);
+
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'DIV');
   });
 
-  it('should allow custom elements instead of "div"', () => {
-    mount(<Row as="section" />).assertSingle('section.row');
+  it('has "row" class', () => {
+    let instance = ReactTestUtils.renderIntoDocument(<Row>Row content</Row>);
+    assert.equal(ReactDOM.findDOMNode(instance).className, 'row');
+  });
+
+  it('Should merge additional classes passed in', () => {
+    let instance = ReactTestUtils.renderIntoDocument(<Row className="bob" />);
+    assert.ok(ReactDOM.findDOMNode(instance).className.match(/\bbob\b/));
+    assert.ok(ReactDOM.findDOMNode(instance).className.match(/\brow\b/));
+  });
+
+  it('allows custom elements instead of "div"', () => {
+    let instance = ReactTestUtils.renderIntoDocument(
+      <Row componentClass="section" />
+    );
+
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'SECTION');
   });
 });

@@ -3,16 +3,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SafeAnchor from './SafeAnchor';
-import { useBootstrapPrefix } from './ThemeProvider';
 
 const propTypes = {
   /**
-   * @default 'breadcrumb-item'
-   */
-  bsPrefix: PropTypes.string,
-  /**
-   * Adds a visual "active" state to a Breadcrumb
-   * Item and disables the link.
+   * If set to true, renders `span` instead of `a`
    */
   active: PropTypes.bool,
   /**
@@ -26,40 +20,32 @@ const propTypes = {
   /**
    * `target` attribute for the inner `a` element
    */
-  target: PropTypes.string,
-
-  as: PropTypes.elementType,
+  target: PropTypes.string
 };
 
 const defaultProps = {
-  active: false,
+  active: false
 };
 
-const BreadcrumbItem = React.forwardRef(
-  // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-  ({ bsPrefix, active, className, as: Component = 'li', ...props }, ref) => {
-    const prefix = useBootstrapPrefix(bsPrefix, 'breadcrumb-item');
+class BreadcrumbItem extends React.Component {
+  render() {
+    const { active, href, title, target, className, ...props } = this.props;
 
-    const { href, title, target, ...elementProps } = props;
+    // Don't try to render these props on non-active <span>.
     const linkProps = { href, title, target };
 
     return (
-      <Component
-        ref={ref}
-        className={classNames(prefix, className, { active })}
-        aria-current={active ? 'page' : undefined}
-      >
+      <li className={classNames(className, { active })}>
         {active ? (
-          <span {...elementProps} className={classNames({ active })} />
+          <span {...props} />
         ) : (
-          <SafeAnchor {...elementProps} {...linkProps} />
+          <SafeAnchor {...props} {...linkProps} />
         )}
-      </Component>
+      </li>
     );
-  },
-);
+  }
+}
 
-BreadcrumbItem.displayName = 'BreadcrumbItem';
 BreadcrumbItem.propTypes = propTypes;
 BreadcrumbItem.defaultProps = defaultProps;
 

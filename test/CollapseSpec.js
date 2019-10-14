@@ -1,10 +1,11 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import Collapse from '../src/Collapse';
 
 describe('<Collapse>', () => {
-  let Component, wrapper;
+  let Component, instance;
 
   beforeEach(() => {
     Component = class extends React.Component {
@@ -28,33 +29,45 @@ describe('<Collapse>', () => {
   });
 
   it('Should default to collapsed', () => {
-    wrapper = mount(<Component>Panel content</Component>);
+    instance = ReactTestUtils.renderIntoDocument(
+      <Component>Panel content</Component>
+    );
 
-    assert.ok(wrapper.find('Collapse').props().in === false);
+    assert.ok(instance.collapse.props.in === false);
   });
 
-  it('Should have collapse class', () => {
-    mount(<Component>Panel content</Component>).assertSingle('.collapse');
+  describe('collapsed', () => {
+    it('Should have collapse class', () => {
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component>Panel content</Component>
+      );
+
+      assert.ok(
+        ReactTestUtils.findRenderedDOMComponentWithClass(instance, 'collapse')
+      );
+    });
   });
 
   describe('from collapsed to expanded', () => {
     beforeEach(() => {
-      wrapper = mount(<Component>Panel content</Component>);
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component>Panel content</Component>
+      );
 
       // since scrollHeight is gonna be 0 detached from the DOM
-      sinon
-        .stub(wrapper.instance().collapse, '_getScrollDimensionValue')
-        .returns('15px');
+      sinon.stub(instance.collapse, '_getScrollDimensionValue').returns('15px');
     });
 
     it('Should have collapsing class', () => {
-      wrapper.setState({ in: true });
+      instance.setState({ in: true });
 
-      assert.equal(wrapper.getDOMNode().className, 'collapsing');
+      let node = ReactDOM.findDOMNode(instance);
+
+      assert.equal(node.className, 'collapsing');
     });
 
     it('Should set initial 0px height', done => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
       function onEnter() {
         assert.equal(node.style.height, '0px');
@@ -63,33 +76,33 @@ describe('<Collapse>', () => {
 
       assert.equal(node.style.height, '');
 
-      wrapper.setState({ in: true, onEnter });
+      instance.setState({ in: true, onEnter });
     });
 
     it('Should set node to height', () => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
-      assert.equal(node.style.height, '');
+      assert.equal(node.styled, undefined);
 
-      wrapper.setState({ in: true });
+      instance.setState({ in: true });
       assert.equal(node.style.height, '15px');
     });
 
     it('Should transition from collapsing to not collapsing', done => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
       function onEntered() {
-        assert.equal(node.className, 'collapse show');
+        assert.equal(node.className, 'collapse in');
         done();
       }
 
-      wrapper.setState({ in: true, onEntered });
+      instance.setState({ in: true, onEntered });
 
       assert.equal(node.className, 'collapsing');
     });
 
     it('Should clear height after transition complete', done => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
       function onEntered() {
         assert.equal(node.style.height, '');
@@ -98,83 +111,91 @@ describe('<Collapse>', () => {
 
       assert.equal(node.style.height, '');
 
-      wrapper.setState({ in: true, onEntered });
+      instance.setState({ in: true, onEntered });
       assert.equal(node.style.height, '15px');
     });
   });
 
   describe('from expanded to collapsed', () => {
     beforeEach(() => {
-      wrapper = mount(<Component in>Panel content</Component>);
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component in>Panel content</Component>
+      );
     });
 
     it('Should have collapsing class', () => {
-      wrapper.setState({ in: false });
-      let node = wrapper.getDOMNode();
+      instance.setState({ in: false });
+      let node = ReactDOM.findDOMNode(instance);
       assert.equal(node.className, 'collapsing');
     });
 
     it('Should set initial height', () => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
       function onExit() {
         assert.equal(node.style.height, '15px');
       }
 
       assert.equal(node.style.height, '');
-      wrapper.setState({ in: false, onExit });
+      instance.setState({ in: false, onExit });
     });
 
     it('Should set node to height', () => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
       assert.equal(node.style.height, '');
 
-      wrapper.setState({ in: false });
-      assert.equal(node.style.height, '');
+      instance.setState({ in: false });
+      assert.equal(node.style.height, '0px');
     });
 
     it('Should transition from collapsing to not collapsing', done => {
-      let node = wrapper.getDOMNode();
+      let node = ReactDOM.findDOMNode(instance);
 
       function onExited() {
         assert.equal(node.className, 'collapse');
         done();
       }
 
-      wrapper.setState({ in: false, onExited });
+      instance.setState({ in: false, onExited });
 
       assert.equal(node.className, 'collapsing');
     });
 
-    it('Should have no height after transition complete', done => {
-      let node = wrapper.getDOMNode();
+    it('Should have 0px height after transition complete', done => {
+      let node = ReactDOM.findDOMNode(instance);
 
       function onExited() {
-        assert.equal(node.style.height, '');
+        assert.ok(node.style.height === '0px');
         done();
       }
 
       assert.equal(node.style.height, '');
 
-      wrapper.setState({ in: false, onExited });
+      instance.setState({ in: false, onExited });
     });
   });
 
   describe('expanded', () => {
     it('Should have collapse and in class', () => {
-      mount(<Component in>Panel content</Component>).assertSingle(
-        '.collapse.show',
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component in>Panel content</Component>
+      );
+
+      expect(ReactDOM.findDOMNode(instance.collapse).className).to.match(
+        /\bcollapse in\b/
       );
     });
   });
 
   describe('dimension', () => {
     beforeEach(() => {
-      wrapper = mount(<Component>Panel content</Component>);
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component>Panel content</Component>
+      );
     });
 
     it('Defaults to height', () => {
-      assert.equal(wrapper.instance().collapse.getDimension(), 'height');
+      assert.equal(instance.collapse.getDimension(), 'height');
     });
 
     it('Uses getCollapsibleDimension if exists', () => {
@@ -182,26 +203,28 @@ describe('<Collapse>', () => {
         return 'whatevs';
       }
 
-      wrapper.setState({ dimension });
+      instance.setState({ dimension });
 
-      assert.equal(wrapper.instance().collapse.getDimension(), 'whatevs');
+      assert.equal(instance.collapse.getDimension(), 'whatevs');
     });
   });
 
   describe('with a role', () => {
     beforeEach(() => {
-      wrapper = mount(<Component role="note">Panel content</Component>);
+      instance = ReactTestUtils.renderIntoDocument(
+        <Component role="note">Panel content</Component>
+      );
     });
 
     it('sets aria-expanded true when expanded', () => {
-      let node = wrapper.getDOMNode();
-      wrapper.setState({ in: true });
+      let node = ReactDOM.findDOMNode(instance);
+      instance.setState({ in: true });
       assert.equal(node.getAttribute('aria-expanded'), 'true');
     });
 
     it('sets aria-expanded false when collapsed', () => {
-      let node = wrapper.getDOMNode();
-      wrapper.setState({ in: false });
+      let node = ReactDOM.findDOMNode(instance);
+      instance.setState({ in: false });
       assert.equal(node.getAttribute('aria-expanded'), 'false');
     });
   });

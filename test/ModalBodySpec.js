@@ -1,18 +1,48 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import Modal from '../src/Modal';
 
 describe('Modal.Body', () => {
   it('uses "div" by default', () => {
-    mount(
-      <Modal.Body className="custom-class">
-        <strong>Content</strong>
-      </Modal.Body>,
-    ).assertSingle('div.modal-body.custom-class strong');
+    const instance = ReactTestUtils.renderIntoDocument(<Modal.Body />);
+
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'DIV');
+  });
+
+  it('has "modal-body" class', () => {
+    const instance = ReactTestUtils.renderIntoDocument(<Modal.Body />);
+
+    assert.include(ReactDOM.findDOMNode(instance).className, 'modal-body');
+  });
+
+  it('should merge additional classes passed in', () => {
+    const instance = ReactTestUtils.renderIntoDocument(
+      <Modal.Body className="custom-class" />
+    );
+    const classes = ReactDOM.findDOMNode(instance).className;
+
+    assert.include(classes, 'modal-body');
+    assert.include(classes, 'custom-class');
   });
 
   it('should allow custom elements instead of "div"', () => {
-    mount(<Modal.Body as="section" />).assertSingle('section.modal-body');
+    const instance = ReactTestUtils.renderIntoDocument(
+      <Modal.Body componentClass="section" />
+    );
+
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'SECTION');
+  });
+
+  it('should render children', () => {
+    const instance = ReactTestUtils.renderIntoDocument(
+      <Modal.Body>
+        <strong>Content</strong>
+      </Modal.Body>
+    );
+    assert.ok(
+      ReactTestUtils.findRenderedDOMComponentWithTag(instance, 'strong')
+    );
   });
 });

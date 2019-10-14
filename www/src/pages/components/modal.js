@@ -1,81 +1,34 @@
 import { graphql } from 'gatsby';
 import React from 'react';
-import { css } from 'astroturf';
 
-import ComponentApi from '../../components/ComponentApi';
-import LinkedHeading from '../../components/LinkedHeading';
+import Anchor from '../../components/Anchor';
+import LinkToSource from '../../components/LinkToSource';
+import PropTable from '../../components/PropTable';
 import ReactPlayground from '../../components/ReactPlayground';
 
-import ModalStatic from '../../examples/Modal/Static';
-import ModalBasic from '../../examples/Modal/Basic';
-import ModalDefaultSizing from '../../examples/Modal/DefaultSizing';
-import ModalCustomSizing from '../../examples/Modal/CustomSizing';
-import ModalVerticallyCentered from '../../examples/Modal/VerticallyCentered';
-import ModalWithoutAnimation from '../../examples/Modal/WithoutAnimation';
-import ModalGrid from '../../examples/Modal/Grid';
-import withLayout from '../../withLayout';
+import ModalStatic from '../../examples/ModalStatic';
+import Modal from '../../examples/Modal';
+import ModalContained from '../../examples/ModalContained';
+import ModalDefaultSizing from '../../examples/ModalDefaultSizing';
+import ModalCustomSizing from '../../examples/ModalCustomSizing';
 
-const styles = css`
-  /* has to be fully global because of modal portals */
-  :global(.modal-90w) {
-    width: 90%;
-    max-width: none !important;
-  }
-`;
-
-export default withLayout(function ModalSection({ data }) {
+export default function ModalSection({ data }) {
   return (
-    <>
-      <LinkedHeading h="1" id="modals">
-        Modals
-      </LinkedHeading>
-      <p className="lead">
-        Add dialogs to your site for lightboxes, user notifications, or
-        completely custom content.
-      </p>
-      <LinkedHeading h="2" id="modals-overview">
-        Overview
-      </LinkedHeading>
-      <ul>
-        <li>
-          Modals are positioned over everything else in the document and remove
-          scroll from the <code>{'<body>'}</code> so that modal content scrolls
-          instead.
-        </li>
-        <li>
-          Modals are <em>unmounted</em> when closed.
-        </li>
-        <li>
-          Bootstrap only supports <strong>one</strong> modal window at a time.
-          Nested modals aren’t supported, but if you really need them the
-          underlying <code>react-overlays</code> can support them if you're
-          willing.
-        </li>
-        <li>
-          Modal's "trap" focus in them, ensuring the keyboard navigation cycles
-          through the modal, and not the rest of the page.
-        </li>
-        <li>
-          Unlike vanilla Bootstrap, <code>autoFocus</code> works in Modals
-          because React handles the implementation.
-        </li>
-      </ul>
+    <div className="bs-docs-section">
+      <h2 className="page-header">
+        <Anchor id="modals">Modals</Anchor> <small>Modal</small>
+      </h2>
 
-      <LinkedHeading h="2" id="modals-examples">
-        Examples
-      </LinkedHeading>
-      <LinkedHeading h="3" id="modals-static">
-        Static Markup
-      </LinkedHeading>
-      <p>
-        Below is a <em>static</em> modal dialog (without the positioning) to
-        demostrate the look and feel of the Modal.
-      </p>
+      <h3>
+        <Anchor id="modals-static">Static Markup</Anchor>
+      </h3>
+      <p>A modal dialog component</p>
       <ReactPlayground codeText={ModalStatic} />
 
-      <LinkedHeading h="3" id="modals-live">
-        Live demo
-      </LinkedHeading>
+      <h3>
+        <Anchor id="modals-live">Basic example</Anchor>
+      </h3>
+      <p />
       <p>
         A modal with header, body, and set of actions in the footer. Use{' '}
         <code>{'<Modal/>'}</code> in combination with other components to show
@@ -85,94 +38,138 @@ export default withLayout(function ModalSection({ data }) {
         <code>{'<Modal.Footer/>'}</code>, which you can use to build the Modal
         content.
       </p>
-      <ReactPlayground codeText={ModalBasic} />
-      <LinkedHeading h="3" id="modals-live">
-        Without Animation
-      </LinkedHeading>
-      <p>
-        A Modal can also be without an animation. For that set the "animation"
-        prop to <code>false</code>.
-      </p>
-      <ReactPlayground codeText={ModalWithoutAnimation} />
+      <ReactPlayground codeText={Modal} />
       <div className="bs-callout bs-callout-info">
-        <div className="h4">Additional Import Options</div>
+        <h4>Additional Import Options</h4>
         <p>
           The Modal Header, Title, Body, and Footer components are available as
           static properties the <code>{'<Modal/>'}</code> component, but you can
-          also, import them directly like:{' '}
-          <code>require("react-bootstrap/ModalHeader")</code>.
+          also, import them directly from the <code>/lib</code> directory like:{' '}
+          <code>require("react-bootstrap/lib/ModalHeader")</code>.
         </p>
       </div>
-      <LinkedHeading h="3" id="modal-vertically-centered">
-        Vertically centered
-      </LinkedHeading>
-      <p>You can vertically center a modal by passing the "centered" prop.</p>
-      <ReactPlayground codeText={ModalVerticallyCentered} />
 
-      <LinkedHeading h="3" id="modal-grid">
-        Using the grid
-      </LinkedHeading>
+      <h3>
+        <Anchor id="modals-contained">Contained Modal</Anchor>
+      </h3>
       <p>
-        You can use grid layouts within a model using regular grid components
-        inside the modal content.
+        You will need to add the following css to your project and ensure that
+        your container has the <code>modal-container</code> class.
       </p>
-      <ReactPlayground codeText={ModalGrid} />
+      <pre>
+        {React.createElement(
+          'code',
+          null,
+          '.modal-container {\n' +
+            '  position: relative;\n' +
+            '}\n' +
+            '.modal-container .modal, .modal-container .modal-backdrop {\n' +
+            '  position: absolute;\n' +
+            '}\n'
+        )}
+      </pre>
+      <ReactPlayground codeText={ModalContained} />
 
-      <LinkedHeading h="2" id="modal-default-sizing">
-        Optional Sizes
-      </LinkedHeading>
+      <h3>
+        <Anchor id="modal-default-sizing">
+          Sizing modals using standard Bootstrap props
+        </Anchor>
+      </h3>
       <p>
-        You can specify a bootstrap large or small modal by using the "size"
+        You can specify a bootstrap large or small modal by using the "bsSize"
         prop.
       </p>
       <ReactPlayground codeText={ModalDefaultSizing} />
 
-      <LinkedHeading h="3" id="modal-custom-sizing">
-        Sizing modals using custom CSS
-      </LinkedHeading>
+      <h3>
+        <Anchor id="modal-custom-sizing">Sizing modals using custom CSS</Anchor>
+      </h3>
       <p>
         You can apply custom css to the modal dialog div using the
         "dialogClassName" prop. Example is using a custom css class with width
         set to 90%.
       </p>
-      <ReactPlayground
-        codeText={ModalCustomSizing}
-        exampleClassName={styles.custom}
-      />
+      <ReactPlayground codeText={ModalCustomSizing} />
 
-      <LinkedHeading h="2" id="modals-props">
-        API
-      </LinkedHeading>
+      <h3>
+        <Anchor id="modals-multiple">Multiple Modals</Anchor>
+      </h3>
+      <div className="bs-callout bs-callout-warning">
+        <h4>Not supported</h4>
+        <p>
+          React-Bootstrap modals are not designed to support rendering multiple
+          modals simultaneously. You will have to add{' '}
+          <code>react-overlays</code> as a dependency and build your own modal
+          component using its{' '}
+          <a href="https://github.com/react-bootstrap/react-overlays/blob/master/src/ModalManager.js">
+            <code>{'<ModalManager/>'}</code>
+          </a>{' '}
+          component, which supports multiple modals.
+        </p>
+      </div>
 
-      <ComponentApi metadata={data.Modal} />
-      <ComponentApi metadata={data.ModalDialog} />
-      <ComponentApi metadata={data.ModalHeader} />
-      <ComponentApi metadata={data.ModalTitle} />
-      <ComponentApi metadata={data.ModalBody} />
-      <ComponentApi metadata={data.ModalFooter} />
-    </>
+      <h3>
+        <Anchor id="modals-props">Props</Anchor>
+      </h3>
+
+      <h4>
+        <Anchor id="modals-props-modal">Modal</Anchor>
+        <LinkToSource component={data.Modal.displayName} />
+      </h4>
+      <PropTable metadata={data.Modal} />
+
+      <h4>
+        <Anchor id="modals-props-modal-dialog">Modal.Dialog</Anchor>
+        <LinkToSource component={data.ModalDialog.displayName} />
+      </h4>
+      <PropTable metadata={data.ModalDialog} />
+
+      <h4>
+        <Anchor id="modals-props-modal-header">Modal.Header</Anchor>
+        <LinkToSource component={data.ModalHeader.displayName} />
+      </h4>
+      <PropTable metadata={data.ModalHeader} />
+
+      <h4>
+        <Anchor id="modals-props-modal-title">Modal.Title</Anchor>
+        <LinkToSource component={data.ModalTitle.displayName} />
+      </h4>
+      <PropTable metadata={data.ModalTitle} />
+
+      <h4>
+        <Anchor id="modals-props-modal-body">Modal.Body</Anchor>
+        <LinkToSource component={data.ModalBody.displayName} />
+      </h4>
+      <PropTable metadata={data.ModalBody} />
+
+      <h4>
+        <Anchor id="modals-props-modal-footer">Modal.Footer</Anchor>
+        <LinkToSource component={data.ModalFooter.displayName} />
+      </h4>
+      <PropTable metadata={data.ModalFooter} />
+    </div>
   );
-});
+}
 
 export const query = graphql`
   query ModalQuery {
     Modal: componentMetadata(displayName: { eq: "Modal" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
     ModalDialog: componentMetadata(displayName: { eq: "ModalDialog" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
     ModalHeader: componentMetadata(displayName: { eq: "ModalHeader" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
     ModalTitle: componentMetadata(displayName: { eq: "ModalTitle" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
     ModalBody: componentMetadata(displayName: { eq: "ModalBody" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
     ModalFooter: componentMetadata(displayName: { eq: "ModalFooter" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
   }
 `;

@@ -1,10 +1,11 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import Fade from '../src/Fade';
 
 describe('Fade', () => {
-  let Component, wrapper;
+  let Component, instance;
 
   beforeEach(() => {
     Component = class extends React.Component {
@@ -21,42 +22,50 @@ describe('Fade', () => {
   });
 
   it('Should default to hidden', () => {
-    wrapper = mount(<Component>Panel content</Component>);
+    instance = ReactTestUtils.renderIntoDocument(
+      <Component>Panel content</Component>
+    );
 
-    assert.ok(wrapper.instance().fade.props.in === false);
+    assert.ok(instance.fade.props.in === false);
   });
 
   it('Should always have the "fade" class', () => {
-    wrapper = mount(<Component>Panel content</Component>);
+    instance = ReactTestUtils.renderIntoDocument(
+      <Component>Panel content</Component>
+    );
 
-    assert.ok(wrapper.instance().fade.props.in === false);
+    assert.ok(instance.fade.props.in === false);
 
-    assert.equal(wrapper.getDOMNode().className, 'fade');
+    assert.equal(ReactDOM.findDOMNode(instance).className, 'fade');
   });
 
   it('Should add "in" class when entering', done => {
-    wrapper = mount(<Component>Panel content</Component>);
+    instance = ReactTestUtils.renderIntoDocument(
+      <Component>Panel content</Component>
+    );
 
     function onEntering() {
-      assert.equal(wrapper.getDOMNode().className, 'fade show');
+      assert.equal(ReactDOM.findDOMNode(instance).className, 'fade in');
       done();
     }
 
-    assert.ok(wrapper.instance().fade.props.in === false);
+    assert.ok(instance.fade.props.in === false);
 
-    wrapper.setState({ in: true, onEntering });
+    instance.setState({ in: true, onEntering });
   });
 
   it('Should remove "in" class when exiting', done => {
-    wrapper = mount(<Component in>Panel content</Component>);
+    instance = ReactTestUtils.renderIntoDocument(
+      <Component in>Panel content</Component>
+    );
 
     function onExiting() {
-      assert.equal(wrapper.getDOMNode().className, 'fade');
+      assert.equal(ReactDOM.findDOMNode(instance).className, 'fade');
       done();
     }
 
-    assert.equal(wrapper.getDOMNode().className, 'fade show');
+    assert.equal(ReactDOM.findDOMNode(instance).className, 'fade in');
 
-    wrapper.setState({ in: false, onExiting });
+    instance.setState({ in: false, onExiting });
   });
 });

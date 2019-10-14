@@ -2,57 +2,61 @@ import classNames from 'classnames';
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { useBootstrapPrefix } from './ThemeProvider';
+import {
+  bsClass,
+  bsSizes,
+  getClassSet,
+  prefix,
+  splitBsProps
+} from './utils/bootstrapUtils';
+import { Size } from './utils/StyleConfig';
 
 const propTypes = {
-  /** @default 'modal' */
-  bsPrefix: PropTypes.string,
-
   /**
-   * Render a large, extra large or small modal.
-   *
-   * @type ('sm'|'lg','xl')
+   * A css class to apply to the Modal dialog DOM node.
    */
-  size: PropTypes.string,
-
-  /**
-   * Specify whether the Component should be vertically centered
-   */
-  centered: PropTypes.bool,
-
-  /**
-   * Allows scrolling the `<Modal.Body>` instead of the entire Modal when overflowing.
-   */
-  scrollable: PropTypes.bool,
+  dialogClassName: PropTypes.string
 };
 
-const ModalDialog = React.forwardRef(
-  (
-    { bsPrefix, className, centered, size, children, scrollable, ...props },
-    ref,
-  ) => {
-    bsPrefix = useBootstrapPrefix(bsPrefix, 'modal');
-    const dialogClass = `${bsPrefix}-dialog`;
+class ModalDialog extends React.Component {
+  render() {
+    const {
+      dialogClassName,
+      className,
+      style,
+      children,
+      ...props
+    } = this.props;
+    const [bsProps, elementProps] = splitBsProps(props);
+
+    const bsClassName = prefix(bsProps);
+
+    const modalStyle = { display: 'block', ...style };
+
+    const dialogClasses = {
+      ...getClassSet(bsProps),
+      [bsClassName]: false,
+      [prefix(bsProps, 'dialog')]: true
+    };
 
     return (
       <div
-        {...props}
-        ref={ref}
-        className={classNames(
-          dialogClass,
-          className,
-          size && `${bsPrefix}-${size}`,
-          centered && `${dialogClass}-centered`,
-          scrollable && `${dialogClass}-scrollable`,
-        )}
+        {...elementProps}
+        tabIndex="-1"
+        role="dialog"
+        style={modalStyle}
+        className={classNames(className, bsClassName)}
       >
-        <div className={`${bsPrefix}-content`}>{children}</div>
+        <div className={classNames(dialogClassName, dialogClasses)}>
+          <div className={prefix(bsProps, 'content')} role="document">
+            {children}
+          </div>
+        </div>
       </div>
     );
-  },
-);
+  }
+}
 
-ModalDialog.displayName = 'ModalDialog';
 ModalDialog.propTypes = propTypes;
 
-export default ModalDialog;
+export default bsClass('modal', bsSizes([Size.LARGE, Size.SMALL], ModalDialog));

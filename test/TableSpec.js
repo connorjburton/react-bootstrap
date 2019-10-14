@@ -1,44 +1,51 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import Table from '../src/Table';
 
 describe('Table', () => {
   it('Should be a table', () => {
-    mount(<Table />).assertSingle('table.table');
+    let instance = ReactTestUtils.renderIntoDocument(<Table />);
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'TABLE');
+    assert.ok(ReactDOM.findDOMNode(instance).className.match(/\btable\b/));
   });
 
   it('Should have correct class when striped', () => {
-    mount(<Table striped />).assertSingle('table.table-striped');
+    let instance = ReactTestUtils.renderIntoDocument(<Table striped />);
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\btable-striped\b/)
+    );
   });
 
   it('Should have correct class when hover', () => {
-    mount(<Table hover />).assertSingle('table.table-hover');
+    let instance = ReactTestUtils.renderIntoDocument(<Table hover />);
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\btable-hover\b/)
+    );
   });
 
   it('Should have correct class when bordered', () => {
-    mount(<Table bordered />).assertSingle('table.table-bordered');
+    let instance = ReactTestUtils.renderIntoDocument(<Table bordered />);
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\btable-bordered\b/)
+    );
   });
 
-  it('Should have correct class when borderless', () => {
-    mount(<Table borderless />).assertSingle('table.table-borderless');
-  });
-
-  it('Should have correct class when small', () => {
-    mount(<Table size="sm" />).assertSingle('table.table-sm');
-  });
-
-  it('Should have correct class when dark', () => {
-    mount(<Table variant="dark" />).assertSingle('table.table-dark');
+  it('Should have correct class when condensed', () => {
+    let instance = ReactTestUtils.renderIntoDocument(<Table condensed />);
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\btable-condensed\b/)
+    );
   });
 
   it('Should have responsive wrapper', () => {
-    mount(<Table responsive />).assertSingle('div.table-responsive > .table');
-  });
-
-  it('Should have responsive breakpoints', () => {
-    mount(<Table responsive="sm" />).assertSingle(
-      'div.table-responsive-sm > .table',
+    let instance = ReactTestUtils.renderIntoDocument(<Table responsive />);
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\btable-responsive\b/)
+    );
+    assert.ok(
+      ReactDOM.findDOMNode(instance).firstChild.className.match(/\btable\b/)
     );
   });
 });

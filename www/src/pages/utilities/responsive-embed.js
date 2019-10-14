@@ -1,18 +1,19 @@
 import { graphql } from 'gatsby';
 import React from 'react';
 
-import LinkedHeading from '../../components/LinkedHeading';
-import ComponentApi from '../../components/ComponentApi';
+import Anchor from '../../components/Anchor';
+import PropTable from '../../components/PropTable';
 import ReactPlayground from '../../components/ReactPlayground';
-import ResponsiveEmbed from '../../examples/ResponsiveEmbed';
-import withLayout from '../../withLayout';
 
-export default withLayout(function ResponsiveEmbedSection({ data }) {
+import ResponsiveEmbed from '../../examples/ResponsiveEmbed';
+
+export default function ResponsiveEmbedSection({ data }) {
   return (
-    <>
-      <LinkedHeading h="1" id="responsive-embed">
-        Responsive embed
-      </LinkedHeading>
+    <div className="bs-docs-section">
+      <h2 className="page-header">
+        <Anchor id="responsive-embed">Responsive embed</Anchor>{' '}
+        <small>ResponsiveEmbed</small>
+      </h2>
 
       <p>
         Allow browsers to determine video or slideshow dimensions based on the
@@ -24,23 +25,24 @@ export default withLayout(function ResponsiveEmbedSection({ data }) {
         <code>iframe</code>
         s.
       </p>
-      <p>
-        The aspect ratio is controlled via the <code>aspectRatio</code> prop.
+      <p className="bg-warning">
+        Either <b>16by9</b> or <b>4by3</b> aspect ratio via <code>a16by9</code>{' '}
+        or <code>a4by3</code> attribute must be set.
       </p>
       <ReactPlayground codeText={ResponsiveEmbed} />
 
-      <LinkedHeading h="3" id="responsive-embed-props">
-        API
-      </LinkedHeading>
-      <ComponentApi metadata={data.ResponsiveEmbed} />
-    </>
+      <h3>
+        <Anchor id="responsive-embed-props">Props</Anchor>
+      </h3>
+      <PropTable metadata={data.ResponsiveEmbed} />
+    </div>
   );
-});
+}
 
 export const query = graphql`
   query ResponsiveEmbedQuery {
     ResponsiveEmbed: componentMetadata(displayName: { eq: "ResponsiveEmbed" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
   }
 `;

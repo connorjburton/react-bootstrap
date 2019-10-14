@@ -1,24 +1,31 @@
-function Example() {
-  const [open, setOpen] = useState(false);
+class Example extends React.Component {
+  constructor(props, context) {
+    super(props, context);
 
-  return (
-    <>
-      <Button
-        onClick={() => setOpen(!open)}
-        aria-controls="example-collapse-text"
-        aria-expanded={open}
-      >
-        click
-      </Button>
-      <Collapse in={open}>
-        <div id="example-collapse-text">
-          Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus
-          terry richardson ad squid. Nihil anim keffiyeh helvetica, craft beer
-          labore wes anderson cred nesciunt sapiente ea proident.
-        </div>
-      </Collapse>
-    </>
-  );
+    this.state = {
+      open: false
+    };
+  }
+
+  render() {
+    return (
+      <div>
+        <Button onClick={() => this.setState({ open: !this.state.open })}>
+          click
+        </Button>
+        <Collapse in={this.state.open}>
+          <div>
+            <Well>
+              Anim pariatur cliche reprehenderit, enim eiusmod high life
+              accusamus terry richardson ad squid. Nihil anim keffiyeh
+              helvetica, craft beer labore wes anderson cred nesciunt sapiente
+              ea proident.
+            </Well>
+          </div>
+        </Collapse>
+      </div>
+    );
+  }
 }
 
 render(<Example />);

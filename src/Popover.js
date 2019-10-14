@@ -2,99 +2,109 @@ import classNames from 'classnames';
 import React from 'react';
 import PropTypes from 'prop-types';
 import isRequiredForA11y from 'prop-types-extra/lib/isRequiredForA11y';
-import { useBootstrapPrefix } from './ThemeProvider';
-import PopoverTitle from './PopoverTitle';
-import PopoverContent from './PopoverContent';
+
+import {
+  bsClass,
+  getClassSet,
+  prefix,
+  splitBsProps
+} from './utils/bootstrapUtils';
 
 const propTypes = {
   /**
-   * @default 'popover'
-   */
-  bsPrefix: PropTypes.string,
-
-  /**
    * An html id attribute, necessary for accessibility
-   * @type {string|number}
+   * @type {string}
    * @required
    */
   id: isRequiredForA11y(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   ),
 
   /**
    * Sets the direction the Popover is positioned towards.
-   *
-   * > This is generally provided by the `Overlay` component positioning the popover
    */
-  placement: PropTypes.oneOf(['auto', 'top', 'bottom', 'left', 'right']),
+  placement: PropTypes.oneOf(['top', 'right', 'bottom', 'left']),
 
   /**
-   * An Overlay injected set of props for positioning the popover arrow.
-   *
-   * > This is generally provided by the `Overlay` component positioning the popover
+   * The "top" position value for the Popover.
    */
-  arrowProps: PropTypes.shape({
-    ref: PropTypes.any,
-    style: PropTypes.object,
-  }),
+  positionTop: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  /**
+   * The "left" position value for the Popover.
+   */
+  positionLeft: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 
   /**
-   * When this prop is set, it creates a Popover with a Popover.Content inside
-   * passing the children directly to it
+   * The "top" position value for the Popover arrow.
    */
-  content: PropTypes.bool,
+  arrowOffsetTop: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  /**
+   * The "left" position value for the Popover arrow.
+   */
+  arrowOffsetLeft: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 
-  /** @private */
-  scheduleUpdate: PropTypes.func,
-  /** @private */
-  outOfBoundaries: PropTypes.bool,
+  /**
+   * Title content
+   */
+  title: PropTypes.node
 };
 
 const defaultProps = {
-  placement: 'right',
+  placement: 'right'
 };
 
-const Popover = React.forwardRef(
-  (
-    {
-      bsPrefix,
+class Popover extends React.Component {
+  render() {
+    const {
       placement,
+      positionTop,
+      positionLeft,
+      arrowOffsetTop,
+      arrowOffsetLeft,
+      title,
       className,
       style,
       children,
-      content,
-      arrowProps,
-      scheduleUpdate: _,
-      outOfBoundaries: _1,
       ...props
-    },
-    ref,
-  ) => {
-    const decoratedBsPrefix = useBootstrapPrefix(bsPrefix, 'popover');
+    } = this.props;
+
+    const [bsProps, elementProps] = splitBsProps(props);
+
+    const classes = {
+      ...getClassSet(bsProps),
+      [placement]: true
+    };
+
+    const outerStyle = {
+      display: 'block',
+      top: positionTop,
+      left: positionLeft,
+      ...style
+    };
+
+    const arrowStyle = {
+      top: arrowOffsetTop,
+      left: arrowOffsetLeft
+    };
+
     return (
       <div
-        ref={ref}
+        {...elementProps}
         role="tooltip"
-        style={style}
-        x-placement={placement}
-        className={classNames(
-          className,
-          decoratedBsPrefix,
-          `bs-popover-${placement}`,
-        )}
-        {...props}
+        className={classNames(className, classes)}
+        style={outerStyle}
       >
-        <div className="arrow" {...arrowProps} />
-        {content ? <PopoverContent>{children}</PopoverContent> : children}
+        <div className="arrow" style={arrowStyle} />
+
+        {title && <h3 className={prefix(bsProps, 'title')}>{title}</h3>}
+
+        <div className={prefix(bsProps, 'content')}>{children}</div>
       </div>
     );
-  },
-);
+  }
+}
 
 Popover.propTypes = propTypes;
 Popover.defaultProps = defaultProps;
 
-Popover.Title = PopoverTitle;
-Popover.Content = PopoverContent;
-
-export default Popover;
+export default bsClass('popover', Popover);

@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import invariant from 'invariant';
-import { useUncontrolled } from 'uncontrollable';
+import uncontrollable from 'uncontrollable';
 
-import chainFunction from './createChainedFunction';
-import { map } from './ElementChildren';
+import chainFunction from './utils/createChainedFunction';
+import ValidChildren from './utils/ValidComponentChildren';
 import ButtonGroup from './ButtonGroup';
 import ToggleButton from './ToggleButton';
 
@@ -36,70 +36,78 @@ const propTypes = {
    * The input `type` of the rendered buttons, determines the toggle behavior
    * of the buttons
    */
-  type: PropTypes.oneOf(['checkbox', 'radio']).isRequired,
+  type: PropTypes.oneOf(['checkbox', 'radio']).isRequired
 };
 
 const defaultProps = {
-  type: 'radio',
+  type: 'radio'
 };
 
-const ToggleButtonGroup = React.forwardRef((props, ref) => {
-  let {
-    children,
-    type,
-    name,
-    value,
-    onChange,
-    ...controlledProps
-  } = useUncontrolled(props, {
-    value: 'onChange',
-  });
+class ToggleButtonGroup extends React.Component {
+  getValues() {
+    const { value } = this.props;
+    return value == null ? [] : [].concat(value);
+  }
 
-  const getValues = () => (value == null ? [] : [].concat(value));
-
-  const handleToggle = (inputVal, event) => {
-    const values = getValues();
-    const isActive = values.indexOf(inputVal) !== -1;
+  handleToggle(value) {
+    const { type, onChange } = this.props;
+    const values = this.getValues();
+    const isActive = values.indexOf(value) !== -1;
 
     if (type === 'radio') {
-      if (!isActive) onChange(inputVal, event);
+      if (!isActive) {
+        onChange(value);
+      }
       return;
     }
 
     if (isActive) {
-      onChange(values.filter(n => n !== inputVal), event);
+      onChange(values.filter(n => n !== value));
     } else {
-      onChange([...values, inputVal], event);
+      onChange([...values, value]);
     }
-  };
+  }
 
-  invariant(
-    type !== 'radio' || !!name,
-    'A `name` is required to group the toggle buttons when the `type` ' +
-      'is set to "radio"',
-  );
+  render() {
+    const { children, type, name, ...props } = this.props;
 
-  return (
-    <ButtonGroup {...controlledProps} ref={ref} toggle>
-      {map(children, child => {
-        const values = getValues();
-        const { value: childVal, onChange: childOnChange } = child.props;
-        const handler = e => handleToggle(childVal, e);
+    const values = this.getValues();
 
-        return React.cloneElement(child, {
-          type,
-          name: child.name || name,
-          checked: values.indexOf(childVal) !== -1,
-          onChange: chainFunction(childOnChange, handler),
-        });
-      })}
-    </ButtonGroup>
-  );
-});
+    invariant(
+      type !== 'radio' || !!name,
+      'A `name` is required to group the toggle buttons when the `type` ' +
+        'is set to "radio"'
+    );
+
+    delete props.onChange;
+    delete props.value;
+
+    // the data attribute is required b/c twbs css uses it in the selector
+    return (
+      <ButtonGroup {...props} data-toggle="buttons">
+        {ValidChildren.map(children, child => {
+          const { value, onChange } = child.props;
+          const handler = () => this.handleToggle(value);
+
+          return React.cloneElement(child, {
+            type,
+            name: child.name || name,
+            checked: values.indexOf(value) !== -1,
+            onChange: chainFunction(onChange, handler)
+          });
+        })}
+      </ButtonGroup>
+    );
+  }
+}
 
 ToggleButtonGroup.propTypes = propTypes;
 ToggleButtonGroup.defaultProps = defaultProps;
 
-ToggleButtonGroup.Button = ToggleButton;
+const UncontrolledToggleButtonGroup = uncontrollable(ToggleButtonGroup, {
+  value: 'onChange'
+});
 
-export default ToggleButtonGroup;
+UncontrolledToggleButtonGroup.Button = ToggleButton;
+
+export default UncontrolledToggleButtonGroup;

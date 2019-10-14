@@ -1,57 +1,37 @@
 import classNames from 'classnames';
-import PropTypes from 'prop-types';
 import React from 'react';
 
-import { useBootstrapPrefix } from './ThemeProvider';
-import PageItem, { First, Prev, Ellipsis, Next, Last } from './PageItem';
+import PaginationItem, {
+  First,
+  Prev,
+  Ellipsis,
+  Next,
+  Last
+} from './PaginationItem';
+import { bsClass, getClassSet, splitBsProps } from './utils/bootstrapUtils';
 
-const propTypes = {
-  /**
-   * @default 'pagination'
-   * */
-  bsPrefix: PropTypes.string,
+class Pagination extends React.Component {
+  render() {
+    const { className, children, ...props } = this.props;
 
-  /**
-   * Set's the size of all PageItems.
-   *
-   * @type {('sm'|'lg')}
-   */
-  size: PropTypes.string,
-};
+    const [bsProps, elementProps] = splitBsProps(props);
 
-/**
- * @property {PageItem} Item
- * @property {PageItem} First
- * @property {PageItem} Prev
- * @property {PageItem} Ellipsis
- * @property {PageItem} Next
- * @property {PageItem} Last
- */
-const Pagination = React.forwardRef(
-  ({ bsPrefix, className, children, size, ...props }, ref) => {
-    const decoratedBsPrefix = useBootstrapPrefix(bsPrefix, 'pagination');
+    const classes = getClassSet(bsProps);
+
     return (
-      <ul
-        ref={ref}
-        {...props}
-        className={classNames(
-          className,
-          decoratedBsPrefix,
-          size && `${decoratedBsPrefix}-${size}`,
-        )}
-      >
+      <ul {...elementProps} className={classNames(className, classes)}>
         {children}
       </ul>
     );
-  },
-);
+  }
+}
 
-Pagination.propTypes = propTypes;
+bsClass('pagination', Pagination);
 
 Pagination.First = First;
 Pagination.Prev = Prev;
 Pagination.Ellipsis = Ellipsis;
-Pagination.Item = PageItem;
+Pagination.Item = PaginationItem;
 Pagination.Next = Next;
 Pagination.Last = Last;
 

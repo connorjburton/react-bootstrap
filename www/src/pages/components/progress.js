@@ -1,39 +1,40 @@
 import { graphql } from 'gatsby';
 import React from 'react';
 
-import LinkedHeading from '../../components/LinkedHeading';
-import ComponentApi from '../../components/ComponentApi';
+import Anchor from '../../components/Anchor';
+import LinkToSource from '../../components/LinkToSource';
+import PropTable from '../../components/PropTable';
 import ReactPlayground from '../../components/ReactPlayground';
-import ProgressBarAnimated from '../../examples/ProgressBar/Animated';
-import ProgressBarBasic from '../../examples/ProgressBar/Basic';
-import ProgressBarContextual from '../../examples/ProgressBar/Contextual';
-import ProgressBarScreenreaderLabel from '../../examples/ProgressBar/ScreenreaderLabel';
-import ProgressBarStacked from '../../examples/ProgressBar/Stacked';
-import ProgressBarStriped from '../../examples/ProgressBar/Striped';
-import ProgressBarWithLabel from '../../examples/ProgressBar/WithLabel';
-import withLayout from '../../withLayout';
 
-export default withLayout(function ProgressBarSection({ data }) {
+import ProgressBarBasic from '../../examples/ProgressBarBasic';
+import ProgressBarWithLabel from '../../examples/ProgressBarWithLabel';
+import ProgressBarScreenreaderLabel from '../../examples/ProgressBarScreenreaderLabel';
+import ProgressBarContextual from '../../examples/ProgressBarContextual';
+import ProgressBarStriped from '../../examples/ProgressBarStriped';
+import ProgressBarAnimated from '../../examples/ProgressBarAnimated';
+import ProgressBarStacked from '../../examples/ProgressBarStacked';
+
+export default function ProgressBarSection({ data }) {
   return (
-    <>
-      <LinkedHeading h="1" id="progress">
-        Progress bars
-      </LinkedHeading>
+    <div className="bs-docs-section">
+      <h2 className="page-header">
+        <Anchor id="progress">Progress bars</Anchor> <small>ProgressBar</small>
+      </h2>
 
       <p className="lead">
         Provide up-to-date feedback on the progress of a workflow or action with
         simple yet flexible progress bars.
       </p>
 
-      <LinkedHeading h="2" id="progress-basic">
-        Example
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-basic">Basic example</Anchor>
+      </h2>
       <p>Default progress bar.</p>
       <ReactPlayground codeText={ProgressBarBasic} />
 
-      <LinkedHeading h="2" id="progress-label">
-        With label
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-label">With label</Anchor>
+      </h2>
       <p>
         Add a <code>label</code> prop to show a visible percentage. For low
         percentages, consider adding a min-width to ensure the label's text is
@@ -41,57 +42,61 @@ export default withLayout(function ProgressBarSection({ data }) {
       </p>
       <ReactPlayground codeText={ProgressBarWithLabel} />
 
-      <LinkedHeading h="2" id="progress-screenreader-label">
-        Screenreader only label
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-screenreader-label">
+          Screenreader only label
+        </Anchor>
+      </h2>
       <p>
         Add a <code>srOnly</code> prop to hide the label visually.
       </p>
       <ReactPlayground codeText={ProgressBarScreenreaderLabel} />
 
-      <LinkedHeading h="2" id="progress-contextual">
-        Contextual alternatives
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-contextual">Contextual alternatives</Anchor>
+      </h2>
       <p>
         Progress bars use some of the same button and alert classes for
         consistent styles.
       </p>
       <ReactPlayground codeText={ProgressBarContextual} />
 
-      <LinkedHeading h="2" id="progress-striped">
-        Striped
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-striped">Striped</Anchor>
+      </h2>
       <p>Uses a gradient to create a striped effect. Not available in IE8.</p>
       <ReactPlayground codeText={ProgressBarStriped} />
 
-      <LinkedHeading h="2" id="progress-animated">
-        Animated
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-animated">Animated</Anchor>
+      </h2>
       <p>
-        Add <code>animated</code> prop to animate the stripes right to left. Not
+        Add <code>active</code> prop to animate the stripes right to left. Not
         available in IE9 and below.
       </p>
       <ReactPlayground codeText={ProgressBarAnimated} />
 
-      <LinkedHeading h="2" id="progress-stacked">
-        Stacked
-      </LinkedHeading>
+      <h2>
+        <Anchor id="progress-stacked">Stacked</Anchor>
+      </h2>
       <p>
-        Nest <code>{'<ProgressBar />'}</code>s to stack them.
+        Nest <code>&lt;ProgressBar /&gt;</code>s to stack them.
       </p>
       <ReactPlayground codeText={ProgressBarStacked} />
-      <LinkedHeading h="2" id="progess-api">
-        API
-      </LinkedHeading>
-      <ComponentApi metadata={data.ProgressBar} />
-    </>
+
+      <h3>
+        <Anchor id="progress-props">ProgressBar</Anchor>
+        <LinkToSource component={data.ProgressBar.displayName} />
+      </h3>
+      <PropTable metadata={data.ProgressBar} />
+    </div>
   );
-});
+}
 
 export const query = graphql`
   query ProgressBarQuery {
     ProgressBar: componentMetadata(displayName: { eq: "ProgressBar" }) {
-      ...ComponentApi_metadata
+      ...PropTable_metadata
     }
   }
 `;

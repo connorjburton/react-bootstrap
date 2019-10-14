@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import elementType from 'prop-types-extra/lib/elementType';
 
-import createChainedFunction from './createChainedFunction';
+import createChainedFunction from './utils/createChainedFunction';
 
 const propTypes = {
   href: PropTypes.string,
@@ -10,11 +11,14 @@ const propTypes = {
   disabled: PropTypes.bool,
   role: PropTypes.string,
   tabIndex: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-
   /**
    * this is sort of silly but needed for Button
    */
-  as: PropTypes.elementType,
+  componentClass: elementType
+};
+
+const defaultProps = {
+  componentClass: 'a'
 };
 
 function isTrivialHref(href) {
@@ -26,42 +30,47 @@ function isTrivialHref(href) {
  * an anchor tag is needed, when semantically a button tag is the
  * better choice. SafeAnchor ensures that when an anchor is used like a
  * button its accessible. It also emulates input `disabled` behavior for
- * links, which is usually desirable for Buttons, NavItems, DropdownItems, etc.
+ * links, which is usually desirable for Buttons, NavItems, MenuItems, etc.
  */
-const SafeAnchor = React.forwardRef(
-  (
-    {
-      // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-      as: Component = 'a',
+class SafeAnchor extends React.Component {
+  constructor(props, context) {
+    super(props, context);
+
+    this.handleClick = this.handleClick.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  handleClick(event) {
+    const { disabled, href, onClick } = this.props;
+
+    if (disabled || isTrivialHref(href)) {
+      event.preventDefault();
+    }
+
+    if (disabled) {
+      event.stopPropagation();
+      return;
+    }
+
+    if (onClick) {
+      onClick(event);
+    }
+  }
+
+  handleKeyDown(event) {
+    if (event.key === ' ') {
+      event.preventDefault();
+      this.handleClick(event);
+    }
+  }
+
+  render() {
+    const {
+      componentClass: Component,
       disabled,
       onKeyDown,
       ...props
-    },
-    ref,
-  ) => {
-    const handleClick = event => {
-      const { href, onClick } = props;
-
-      if (disabled || isTrivialHref(href)) {
-        event.preventDefault();
-      }
-
-      if (disabled) {
-        event.stopPropagation();
-        return;
-      }
-
-      if (onClick) {
-        onClick(event);
-      }
-    };
-
-    const handleKeyDown = event => {
-      if (event.key === ' ') {
-        event.preventDefault();
-        handleClick(event);
-      }
-    };
+    } = this.props;
 
     if (isTrivialHref(props.href)) {
       props.role = props.role || 'button';
@@ -72,21 +81,20 @@ const SafeAnchor = React.forwardRef(
 
     if (disabled) {
       props.tabIndex = -1;
-      props['aria-disabled'] = true;
+      props.style = { pointerEvents: 'none', ...props.style };
     }
 
     return (
       <Component
-        ref={ref}
         {...props}
-        onClick={handleClick}
-        onKeyDown={createChainedFunction(handleKeyDown, onKeyDown)}
+        onClick={this.handleClick}
+        onKeyDown={createChainedFunction(this.handleKeyDown, onKeyDown)}
       />
     );
-  },
-);
+  }
+}
 
 SafeAnchor.propTypes = propTypes;
-SafeAnchor.displayName = 'SafeAnchor';
+SafeAnchor.defaultProps = defaultProps;
 
 export default SafeAnchor;

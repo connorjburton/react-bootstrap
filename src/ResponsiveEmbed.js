@@ -1,56 +1,63 @@
 import classNames from 'classnames';
-import React from 'react';
+import React, { cloneElement } from 'react';
 import PropTypes from 'prop-types';
+import warning from 'warning';
 
-import { useBootstrapPrefix } from './ThemeProvider';
+import {
+  bsClass,
+  getClassSet,
+  prefix,
+  splitBsProps
+} from './utils/bootstrapUtils';
+
+// TODO: This should probably take a single `aspectRatio` prop.
 
 const propTypes = {
-  /**
-   * @default 'embed-responsive'
-   */
-  bsPrefix: PropTypes.string,
-
   /**
    * This component requires a single child element
    */
   children: PropTypes.element.isRequired,
-
   /**
-   * Set the aspect ration of the embed
+   * 16by9 aspect ratio
    */
-  aspectRatio: PropTypes.oneOf(['21by9', '16by9', '4by3', '1by1']),
+  a16by9: PropTypes.bool,
+  /**
+   * 4by3 aspect ratio
+   */
+  a4by3: PropTypes.bool
 };
 
 const defaultProps = {
-  aspectRatio: '1by1',
+  a16by9: false,
+  a4by3: false
 };
 
-const ResponsiveEmbed = React.forwardRef(
-  ({ bsPrefix, className, children, aspectRatio, ...props }, ref) => {
-    const decoratedBsPrefix = useBootstrapPrefix(bsPrefix, 'embed-responsive');
-    const child = React.Children.only(children);
+class ResponsiveEmbed extends React.Component {
+  render() {
+    const { a16by9, a4by3, className, children, ...props } = this.props;
+    const [bsProps, elementProps] = splitBsProps(props);
+
+    warning(a16by9 || a4by3, 'Either `a16by9` or `a4by3` must be set.');
+    warning(!(a16by9 && a4by3), 'Only one of `a16by9` or `a4by3` can be set.');
+
+    const classes = {
+      ...getClassSet(bsProps),
+      [prefix(bsProps, '16by9')]: a16by9,
+      [prefix(bsProps, '4by3')]: a4by3
+    };
+
     return (
-      <div
-        ref={ref}
-        {...props}
-        className={classNames(
-          decoratedBsPrefix,
-          className,
-          aspectRatio && `${decoratedBsPrefix}-${aspectRatio}`,
-        )}
-      >
-        {React.cloneElement(child, {
-          className: classNames(
-            child.props.className,
-            `${decoratedBsPrefix}-item`,
-          ),
+      <div className={classNames(classes)}>
+        {cloneElement(children, {
+          ...elementProps,
+          className: classNames(className, prefix(bsProps, 'item'))
         })}
       </div>
     );
-  },
-);
+  }
+}
 
 ResponsiveEmbed.propTypes = propTypes;
 ResponsiveEmbed.defaultProps = defaultProps;
 
-export default ResponsiveEmbed;
+export default bsClass('embed-responsive', ResponsiveEmbed);

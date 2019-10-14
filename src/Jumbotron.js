@@ -1,50 +1,31 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import elementType from 'prop-types-extra/lib/elementType';
 
-import { useBootstrapPrefix } from './ThemeProvider';
+import { bsClass, getClassSet, splitBsProps } from './utils/bootstrapUtils';
 
 const propTypes = {
-  as: PropTypes.elementType,
-  /** Make the jumbotron full width, and without rounded corners */
-  fluid: PropTypes.bool,
-  /** @default 'jumbotron' */
-  bsPrefix: PropTypes.string,
+  componentClass: elementType
 };
 
 const defaultProps = {
-  fluid: false,
+  componentClass: 'div'
 };
 
-const Jumbotron = React.forwardRef(
-  (
-    {
-      // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-      as: Component = 'div',
-      className,
-      fluid,
-      bsPrefix,
-      ...props
-    },
-    ref,
-  ) => {
-    bsPrefix = useBootstrapPrefix(bsPrefix, 'jumbotron');
-    const classes = {
-      [bsPrefix]: true,
-      [`${bsPrefix}-fluid`]: fluid,
-    };
+class Jumbotron extends React.Component {
+  render() {
+    const { componentClass: Component, className, ...props } = this.props;
+    const [bsProps, elementProps] = splitBsProps(props);
+
+    const classes = getClassSet(bsProps);
+
     return (
-      <Component
-        ref={ref}
-        {...props}
-        className={classNames(className, classes)}
-      />
+      <Component {...elementProps} className={classNames(className, classes)} />
     );
-  },
-);
+  }
+}
 
 Jumbotron.propTypes = propTypes;
 Jumbotron.defaultProps = defaultProps;
-Jumbotron.displayName = 'Jumbotron';
 
-export default Jumbotron;
+export default bsClass('jumbotron', Jumbotron);

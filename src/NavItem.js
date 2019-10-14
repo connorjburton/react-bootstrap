@@ -2,38 +2,84 @@ import classNames from 'classnames';
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { useBootstrapPrefix } from './ThemeProvider';
+import SafeAnchor from './SafeAnchor';
+import createChainedFunction from './utils/createChainedFunction';
 
 const propTypes = {
-  /**
-   * @default 'nav-item'
-   */
-  bsPrefix: PropTypes.string,
-
-  /** The ARIA role of the component */
+  active: PropTypes.bool,
+  disabled: PropTypes.bool,
   role: PropTypes.string,
-
-  as: PropTypes.elementType,
+  href: PropTypes.string,
+  onClick: PropTypes.func,
+  onSelect: PropTypes.func,
+  eventKey: PropTypes.any
 };
 
-const NavItem = React.forwardRef(
-  // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-  ({ bsPrefix, className, children, as: Component = 'div', ...props }, ref) => {
-    bsPrefix = useBootstrapPrefix(bsPrefix, 'nav-item');
+const defaultProps = {
+  active: false,
+  disabled: false
+};
+
+class NavItem extends React.Component {
+  constructor(props, context) {
+    super(props, context);
+
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick(e) {
+    if (this.props.disabled) {
+      e.preventDefault();
+      return;
+    }
+
+    if (this.props.onSelect) {
+      this.props.onSelect(this.props.eventKey, e);
+    }
+  }
+
+  render() {
+    const {
+      active,
+      disabled,
+      onClick,
+      className,
+      style,
+      ...props
+    } = this.props;
+
+    delete props.onSelect;
+    delete props.eventKey;
+
+    // These are injected down by `<Nav>` for building `<SubNav>`s.
+    delete props.activeKey;
+    delete props.activeHref;
+
+    if (!props.role) {
+      if (props.href === '#') {
+        props.role = 'button';
+      }
+    } else if (props.role === 'tab') {
+      props['aria-selected'] = active;
+    }
 
     return (
-      <Component
-        {...props}
-        ref={ref}
-        className={classNames(className, bsPrefix)}
+      <li
+        role="presentation"
+        className={classNames(className, { active, disabled })}
+        style={style}
       >
-        {children}
-      </Component>
+        <SafeAnchor
+          {...props}
+          disabled={disabled}
+          onClick={createChainedFunction(onClick, this.handleClick)}
+        />
+      </li>
     );
-  },
-);
+  }
+}
 
-NavItem.displayName = 'NavItem';
 NavItem.propTypes = propTypes;
+NavItem.defaultProps = defaultProps;
 
 export default NavItem;

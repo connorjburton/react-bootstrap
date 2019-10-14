@@ -2,67 +2,66 @@ import classNames from 'classnames';
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { useBootstrapPrefix } from './ThemeProvider';
+import { bsClass, prefix, splitBsProps } from './utils/bootstrapUtils';
 
 const propTypes = {
   /**
-   * @default 'img'
+   * Sets image as responsive image
    */
-  bsPrefix: PropTypes.string,
-  /**
-   * Sets image as fluid image.
-   */
-  fluid: PropTypes.bool,
+  responsive: PropTypes.bool,
 
   /**
-   * Sets image shape as rounded.
+   * Sets image shape as rounded
    */
   rounded: PropTypes.bool,
 
   /**
-   * Sets image shape as circle.
+   * Sets image shape as circle
    */
-  roundedCircle: PropTypes.bool,
+  circle: PropTypes.bool,
 
   /**
-   * Sets image shape as thumbnail.
+   * Sets image shape as thumbnail
    */
-  thumbnail: PropTypes.bool,
+  thumbnail: PropTypes.bool
 };
 
 const defaultProps = {
-  fluid: false,
+  responsive: false,
   rounded: false,
-  roundedCircle: false,
-  thumbnail: false,
+  circle: false,
+  thumbnail: false
 };
 
-const Image = React.forwardRef(
-  (
-    { bsPrefix, className, fluid, rounded, roundedCircle, thumbnail, ...props },
-    ref,
-  ) => {
-    bsPrefix = useBootstrapPrefix(bsPrefix, 'img');
+class Image extends React.Component {
+  render() {
+    const {
+      responsive,
+      rounded,
+      circle,
+      thumbnail,
+      className,
+      ...props
+    } = this.props;
+    const [bsProps, elementProps] = splitBsProps(props);
 
-    const classes = classNames(
-      fluid && `${bsPrefix}-fluid`,
-      rounded && `rounded`,
-      roundedCircle && `rounded-circle`,
-      thumbnail && `${bsPrefix}-thumbnail`,
-    );
+    const classes = {
+      [prefix(bsProps, 'responsive')]: responsive,
+      [prefix(bsProps, 'rounded')]: rounded,
+      [prefix(bsProps, 'circle')]: circle,
+      [prefix(bsProps, 'thumbnail')]: thumbnail
+    };
 
     return (
       <img // eslint-disable-line jsx-a11y/alt-text
-        ref={ref}
-        {...props}
+        {...elementProps}
         className={classNames(className, classes)}
       />
     );
-  },
-);
+  }
+}
 
-Image.displayName = 'Image';
 Image.propTypes = propTypes;
 Image.defaultProps = defaultProps;
 
-export default Image;
+export default bsClass('img', Image);

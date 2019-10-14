@@ -1,228 +1,132 @@
 import classNames from 'classnames';
-import styles from 'dom-helpers/style';
-import transition from 'dom-helpers/transition';
 import React, { cloneElement } from 'react';
 import PropTypes from 'prop-types';
-import { uncontrollable } from 'uncontrollable';
 
 import CarouselCaption from './CarouselCaption';
 import CarouselItem from './CarouselItem';
+import Glyphicon from './Glyphicon';
 import SafeAnchor from './SafeAnchor';
-import { map, forEach } from './ElementChildren';
-import triggerBrowserReflow from './triggerBrowserReflow';
-import { createBootstrapComponent } from './ThemeProvider';
-
-const countChildren = c =>
-  React.Children.toArray(c).filter(React.isValidElement).length;
-
-const SWIPE_THRESHOLD = 40;
+import {
+  bsClass,
+  getClassSet,
+  prefix,
+  splitBsPropsAndOmit
+} from './utils/bootstrapUtils';
+import ValidComponentChildren from './utils/ValidComponentChildren';
 
 // TODO: `slide` should be `animate`.
 
+// TODO: Use uncontrollable.
+
 const propTypes = {
-  /**
-   * @default 'carousel'
-   */
-  bsPrefix: PropTypes.string,
-  as: PropTypes.elementType,
-
-  /**
-   * Enables animation on the Carousel as it transitions between slides.
-   */
   slide: PropTypes.bool,
-
-  /** Cross fade slides instead of the default slide animation */
-  fade: PropTypes.bool,
-
-  /** Slides will loop to the start when the last one transitions */
-  wrap: PropTypes.bool,
-
-  /**
-   * Show a set of slide position indicators
-   */
   indicators: PropTypes.bool,
-
   /**
    * The amount of time to delay between automatically cycling an item.
    * If `null`, carousel will not automatically cycle.
    */
   interval: PropTypes.number,
-
-  /**
-   * Show the Carousel previous and next arrows for changing the current slide
-   */
   controls: PropTypes.bool,
-
-  /**
-   * Temporarily pause the slide interval when the mouse hovers over a slide.
-   */
   pauseOnHover: PropTypes.bool,
-
-  /** Enable keyboard navigation via the Arrow keys for changing slides */
-  keyboard: PropTypes.bool,
-
+  wrap: PropTypes.bool,
   /**
    * Callback fired when the active item changes.
    *
    * ```js
-   * (eventKey: any, direction: 'prev' | 'next', ?event: Object) => any
+   * (eventKey: any, ?event: Object) => any
    * ```
    *
-   * @controllable activeIndex
+   * If this callback takes two or more arguments, the second argument will
+   * be a persisted event object with `direction` set to the direction of the
+   * transition.
    */
   onSelect: PropTypes.func,
-
-  /** A callback fired after a slide transitions in */
   onSlideEnd: PropTypes.func,
-
-  /**
-   * Controls the current visible slide
-   *
-   * @controllable onSelect
-   */
   activeIndex: PropTypes.number,
-
-  /** Override the default button icon for the "previous" control */
+  defaultActiveIndex: PropTypes.number,
+  direction: PropTypes.oneOf(['prev', 'next']),
   prevIcon: PropTypes.node,
-
   /**
    * Label shown to screen readers only, can be used to show the previous element
    * in the carousel.
    * Set to null to deactivate.
    */
   prevLabel: PropTypes.string,
-
-  /** Override the default button icon for the "next" control */
   nextIcon: PropTypes.node,
-
   /**
    * Label shown to screen readers only, can be used to show the next element
    * in the carousel.
    * Set to null to deactivate.
    */
-  nextLabel: PropTypes.string,
-
-  /**
-   * Whether the carousel should support left/right swipe interactions on touchscreen devices.
-   */
-  touch: PropTypes.bool,
+  nextLabel: PropTypes.string
 };
 
 const defaultProps = {
   slide: true,
-  fade: false,
   interval: 5000,
-  keyboard: true,
   pauseOnHover: true,
   wrap: true,
   indicators: true,
   controls: true,
-  activeIndex: 0,
-
-  prevIcon: <span aria-hidden="true" className="carousel-control-prev-icon" />,
+  prevIcon: <Glyphicon glyph="chevron-left" />,
   prevLabel: 'Previous',
-
-  nextIcon: <span aria-hidden="true" className="carousel-control-next-icon" />,
-  nextLabel: 'Next',
-  touch: true,
+  nextIcon: <Glyphicon glyph="chevron-right" />,
+  nextLabel: 'Next'
 };
 
 class Carousel extends React.Component {
-  state = {
-    prevClasses: '',
-    currentClasses: 'active',
-    touchStartX: 0,
-  };
+  constructor(props, context) {
+    super(props, context);
 
-  isUnmounted = false;
+    this.handleMouseOver = this.handleMouseOver.bind(this);
+    this.handleMouseOut = this.handleMouseOut.bind(this);
+    this.handlePrev = this.handlePrev.bind(this);
+    this.handleNext = this.handleNext.bind(this);
+    this.handleItemAnimateOutEnd = this.handleItemAnimateOutEnd.bind(this);
 
-  carousel = React.createRef();
+    const { defaultActiveIndex } = props;
+
+    this.state = {
+      activeIndex: defaultActiveIndex != null ? defaultActiveIndex : 0,
+      previousActiveIndex: null,
+      direction: null
+    };
+
+    this.isUnmounted = false;
+  }
 
   componentDidMount() {
-    this.cycle();
+    this.waitForNext();
   }
 
-  static getDerivedStateFromProps(
-    nextProps,
-    { activeIndex: previousActiveIndex },
-  ) {
-    if (nextProps.activeIndex !== previousActiveIndex) {
-      const lastPossibleIndex = countChildren(nextProps.children) - 1;
+  componentWillReceiveProps(nextProps) {
+    const activeIndex = this.getActiveIndex();
 
-      const nextIndex = Math.max(
-        0,
-        Math.min(nextProps.activeIndex, lastPossibleIndex),
-      );
-
-      let direction;
-      if (
-        (nextIndex === 0 && previousActiveIndex >= lastPossibleIndex) ||
-        previousActiveIndex <= nextIndex
-      ) {
-        direction = 'next';
-      } else {
-        direction = 'prev';
-      }
-
-      return {
-        direction,
-        previousActiveIndex,
-        activeIndex: nextIndex,
-      };
-    }
-    return null;
-  }
-
-  componentDidUpdate(_, prevState) {
-    const { bsPrefix, slide, onSlideEnd } = this.props;
     if (
-      !slide ||
-      this.state.activeIndex === prevState.activeIndex ||
-      this._isSliding
-    )
-      return;
+      nextProps.activeIndex != null &&
+      nextProps.activeIndex !== activeIndex
+    ) {
+      clearTimeout(this.timeout);
 
-    const { activeIndex, direction } = this.state;
-    let orderClassName, directionalClassName;
-
-    if (direction === 'next') {
-      orderClassName = `${bsPrefix}-item-next`;
-      directionalClassName = `${bsPrefix}-item-left`;
-    } else if (direction === 'prev') {
-      orderClassName = `${bsPrefix}-item-prev`;
-      directionalClassName = `${bsPrefix}-item-right`;
+      this.setState({
+        previousActiveIndex: activeIndex,
+        direction:
+          nextProps.direction != null
+            ? nextProps.direction
+            : this.getDirection(activeIndex, nextProps.activeIndex)
+      });
     }
 
-    this._isSliding = true;
-
-    this.pause();
-
-    // eslint-disable-next-line react/no-did-update-set-state
-    this.safeSetState(
-      { prevClasses: 'active', currentClasses: orderClassName },
-      () => {
-        const items = this.carousel.current.children;
-        const nextElement = items[activeIndex];
-        triggerBrowserReflow(nextElement);
-
-        this.safeSetState(
-          {
-            prevClasses: classNames('active', directionalClassName),
-            currentClasses: classNames(orderClassName, directionalClassName),
-          },
-          () =>
-            transition.end(nextElement, () => {
-              this.safeSetState(
-                { prevClasses: '', currentClasses: 'active' },
-                this.handleSlideEnd,
-              );
-              if (onSlideEnd) {
-                onSlideEnd();
-              }
-            }),
-        );
-      },
-    );
+    if (
+      nextProps.activeIndex == null &&
+      this.state.activeIndex >= nextProps.children.length
+    ) {
+      this.setState({
+        activeIndex: 0,
+        previousActiveIndex: null,
+        direction: null
+      });
+    }
   }
 
   componentWillUnmount() {
@@ -230,182 +134,162 @@ class Carousel extends React.Component {
     this.isUnmounted = true;
   }
 
-  handleTouchStart = e => {
-    this.setState({ touchStartX: e.changedTouches[0].screenX });
-  };
+  getActiveIndex() {
+    const activeIndexProp = this.props.activeIndex;
+    return activeIndexProp != null ? activeIndexProp : this.state.activeIndex;
+  }
 
-  handleTouchEnd = e => {
-    // If the swipe is under the threshold, don't do anything.
-    if (
-      Math.abs(e.changedTouches[0].screenX - this.state.touchStartX) <
-      SWIPE_THRESHOLD
-    )
-      return;
-
-    if (e.changedTouches[0].screenX < this.state.touchStartX) {
-      // Swiping left to navigate to next item.
-      this.handleNext(e);
-    } else {
-      // Swiping right to navigate to previous item.
-      this.handlePrev(e);
+  getDirection(prevIndex, index) {
+    if (prevIndex === index) {
+      return null;
     }
-  };
 
-  handleSlideEnd = () => {
-    const pendingIndex = this._pendingIndex;
-    this._isSliding = false;
-    this._pendingIndex = null;
+    return prevIndex > index ? 'prev' : 'next';
+  }
 
-    if (pendingIndex != null) this.to(pendingIndex);
-    else this.cycle();
-  };
+  handleItemAnimateOutEnd() {
+    this.setState(
+      {
+        previousActiveIndex: null,
+        direction: null
+      },
+      () => {
+        this.waitForNext();
 
-  handleMouseOut = () => {
-    this.cycle();
-  };
+        if (this.props.onSlideEnd) {
+          this.props.onSlideEnd();
+        }
+      }
+    );
+  }
 
-  handleMouseOver = () => {
-    if (this.props.pauseOnHover) this.pause();
-  };
-
-  handleKeyDown = event => {
-    if (/input|textarea/i.test(event.target.tagName)) return;
-
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault();
-        this.handlePrev(event);
-        break;
-      case 'ArrowRight':
-        event.preventDefault();
-        this.handleNext(event);
-        break;
-      default:
-        break;
+  handleMouseOut() {
+    if (this.isPaused) {
+      this.play();
     }
-  };
+  }
 
-  handleNextWhenVisible = () => {
-    if (
-      !this.isUnmounted &&
-      !document.hidden &&
-      styles(this.carousel.current, 'visibility') !== 'hidden'
-    ) {
-      this.handleNext();
+  handleMouseOver() {
+    if (this.props.pauseOnHover) {
+      this.pause();
     }
-  };
+  }
 
-  handleNext = e => {
-    if (this._isSliding) return;
-
-    const { wrap, activeIndex } = this.props;
-
-    let index = activeIndex + 1;
-    const count = countChildren(this.props.children);
+  handleNext(e) {
+    let index = this.getActiveIndex() + 1;
+    const count = ValidComponentChildren.count(this.props.children);
 
     if (index > count - 1) {
-      if (!wrap) return;
-
+      if (!this.props.wrap) {
+        return;
+      }
       index = 0;
     }
 
     this.select(index, e, 'next');
-  };
+  }
 
-  handlePrev = e => {
-    if (this._isSliding) return;
-
-    const { wrap, activeIndex } = this.props;
-
-    let index = activeIndex - 1;
+  handlePrev(e) {
+    let index = this.getActiveIndex() - 1;
 
     if (index < 0) {
-      if (!wrap) return;
-      index = countChildren(this.props.children) - 1;
+      if (!this.props.wrap) {
+        return;
+      }
+      index = ValidComponentChildren.count(this.props.children) - 1;
     }
 
     this.select(index, e, 'prev');
-  };
-
-  safeSetState(state, cb) {
-    if (this.isUnmounted) return;
-    this.setState(state, () => !this.isUnmounted && cb());
   }
 
   // This might be a public API.
   pause() {
-    this._isPaused = true;
-    clearInterval(this._interval);
-    this._interval = null;
+    this.isPaused = true;
+    clearTimeout(this.timeout);
   }
 
-  cycle() {
-    this._isPaused = false;
-
-    clearInterval(this._interval);
-    this._interval = null;
-
-    if (this.props.interval && !this._isPaused) {
-      this._interval = setInterval(
-        document.visibilityState ? this.handleNextWhenVisible : this.handleNext,
-        this.props.interval,
-      );
-    }
+  // This might be a public API.
+  play() {
+    this.isPaused = false;
+    this.waitForNext();
   }
 
-  to(index, event) {
-    const { children } = this.props;
-    if (index < 0 || index > countChildren(children) - 1) {
+  select(index, e, direction) {
+    clearTimeout(this.timeout);
+
+    // TODO: Is this necessary? Seems like the only risk is if the component
+    // unmounts while handleItemAnimateOutEnd fires.
+    if (this.isUnmounted) {
       return;
     }
 
-    if (this._isSliding) {
-      this._pendingIndex = index;
-      return;
+    const previousActiveIndex = this.props.slide ? this.getActiveIndex() : null;
+    direction = direction || this.getDirection(previousActiveIndex, index);
+
+    const { onSelect } = this.props;
+
+    if (onSelect) {
+      if (onSelect.length > 1) {
+        // React SyntheticEvents are pooled, so we need to remove this event
+        // from the pool to add a custom property. To avoid unnecessarily
+        // removing objects from the pool, only do this when the listener
+        // actually wants the event.
+        if (e) {
+          e.persist();
+          e.direction = direction;
+        } else {
+          e = { direction };
+        }
+
+        onSelect(index, e);
+      } else {
+        onSelect(index);
+      }
     }
 
-    this.select(index, event);
+    if (this.props.activeIndex == null && index !== previousActiveIndex) {
+      if (this.state.previousActiveIndex != null) {
+        // If currently animating don't activate the new index.
+        // TODO: look into queueing this canceled call and
+        // animating after the current animation has ended.
+        return;
+      }
+
+      this.setState({
+        activeIndex: index,
+        previousActiveIndex,
+        direction
+      });
+    }
   }
 
-  select(index, event, direction) {
-    clearTimeout(this.selectThrottle);
-    if (event && event.persist) event.persist();
+  waitForNext() {
+    const { slide, interval, activeIndex: activeIndexProp } = this.props;
 
-    // The timeout throttles fast clicks, in order to give any pending state
-    // a chance to update and propagate back through props
-    this.selectThrottle = setTimeout(() => {
-      clearTimeout(this.timeout);
-
-      const { activeIndex, onSelect } = this.props;
-      if (index === activeIndex || this._isSliding || this.isUnmounted) return;
-
-      onSelect(
-        index,
-        direction || (index < activeIndex ? 'prev' : 'next'),
-        event,
-      );
-    }, 50);
+    if (!this.isPaused && slide && interval && activeIndexProp == null) {
+      this.timeout = setTimeout(this.handleNext, interval);
+    }
   }
 
   renderControls(properties) {
-    const { bsPrefix } = this.props;
     const {
       wrap,
       children,
       activeIndex,
       prevIcon,
       nextIcon,
+      bsProps,
       prevLabel,
-      nextLabel,
+      nextLabel
     } = properties;
-
-    const count = countChildren(children);
+    const controlClassName = prefix(bsProps, 'control');
+    const count = ValidComponentChildren.count(children);
 
     return [
       (wrap || activeIndex !== 0) && (
         <SafeAnchor
           key="prev"
-          className={`${bsPrefix}-control-prev`}
+          className={classNames(controlClassName, 'left')}
           onClick={this.handlePrev}
         >
           {prevIcon}
@@ -416,99 +300,93 @@ class Carousel extends React.Component {
       (wrap || activeIndex !== count - 1) && (
         <SafeAnchor
           key="next"
-          className={`${bsPrefix}-control-next`}
+          className={classNames(controlClassName, 'right')}
           onClick={this.handleNext}
         >
           {nextIcon}
           {nextLabel && <span className="sr-only">{nextLabel}</span>}
         </SafeAnchor>
-      ),
+      )
     ];
   }
 
-  renderIndicators(children, activeIndex) {
-    const { bsPrefix } = this.props;
+  renderIndicators(children, activeIndex, bsProps) {
     let indicators = [];
 
-    forEach(children, (child, index) => {
+    ValidComponentChildren.forEach(children, (child, index) => {
       indicators.push(
         <li
           key={index}
           className={index === activeIndex ? 'active' : null}
-          onClick={e => this.to(index, e)}
+          onClick={e => this.select(index, e)}
         />,
 
         // Force whitespace between indicator elements. Bootstrap requires
         // this for correct spacing of elements.
-        ' ',
+        ' '
       );
     });
 
-    return <ol className={`${bsPrefix}-indicators`}>{indicators}</ol>;
+    return <ol className={prefix(bsProps, 'indicators')}>{indicators}</ol>;
   }
 
   render() {
     const {
-      // Need to define the default "as" during prop destructuring to be compatible with styled-components github.com/react-bootstrap/react-bootstrap/issues/3595
-      as: Component = 'div',
-      bsPrefix,
       slide,
-      fade,
       indicators,
       controls,
       wrap,
-      touch,
       prevIcon,
       prevLabel,
       nextIcon,
       nextLabel,
       className,
       children,
-      keyboard,
-      activeIndex: _5,
-      pauseOnHover: _4,
-      interval: _3,
-      onSelect: _2,
-      onSlideEnd: _1,
       ...props
     } = this.props;
 
-    const {
-      activeIndex,
-      previousActiveIndex,
-      prevClasses,
-      currentClasses,
-    } = this.state;
+    const { previousActiveIndex, direction } = this.state;
+
+    const [bsProps, elementProps] = splitBsPropsAndOmit(props, [
+      'interval',
+      'pauseOnHover',
+      'onSelect',
+      'onSlideEnd',
+      'activeIndex', // Accessed via this.getActiveIndex().
+      'defaultActiveIndex',
+      'direction'
+    ]);
+
+    const activeIndex = this.getActiveIndex();
+
+    const classes = {
+      ...getClassSet(bsProps),
+      slide
+    };
 
     return (
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-      <Component
-        onTouchStart={touch ? this.handleTouchStart : undefined}
-        onTouchEnd={touch ? this.handleTouchEnd : undefined}
-        {...props}
-        className={classNames(
-          className,
-          bsPrefix,
-          slide && 'slide',
-          fade && `${bsPrefix}-fade`,
-        )}
-        onKeyDown={keyboard ? this.handleKeyDown : undefined}
+      <div
+        {...elementProps}
+        className={classNames(className, classes)}
         onMouseOver={this.handleMouseOver}
         onMouseOut={this.handleMouseOut}
       >
-        {indicators && this.renderIndicators(children, activeIndex)}
+        {indicators && this.renderIndicators(children, activeIndex, bsProps)}
 
-        <div className={`${bsPrefix}-inner`} ref={this.carousel}>
-          {map(children, (child, index) => {
-            const current = index === activeIndex;
-            const previous = index === previousActiveIndex;
+        <div className={prefix(bsProps, 'inner')}>
+          {ValidComponentChildren.map(children, (child, index) => {
+            const active = index === activeIndex;
+            const previousActive = slide && index === previousActiveIndex;
 
             return cloneElement(child, {
-              className: classNames(
-                child.props.className,
-                current && currentClasses,
-                previous && prevClasses,
-              ),
+              active,
+              index,
+              animateOut: previousActive,
+              animateIn: active && previousActiveIndex != null && slide,
+              direction,
+              onAnimateOutEnd: previousActive
+                ? this.handleItemAnimateOutEnd
+                : null
             });
           })}
         </div>
@@ -522,20 +400,17 @@ class Carousel extends React.Component {
             prevLabel,
             nextIcon,
             nextLabel,
+            bsProps
           })}
-      </Component>
+      </div>
     );
   }
 }
-Carousel.defaultProps = defaultProps;
+
 Carousel.propTypes = propTypes;
+Carousel.defaultProps = defaultProps;
 
-const DecoratedCarousel = createBootstrapComponent(
-  uncontrollable(Carousel, { activeIndex: 'onSelect' }),
-  'carousel',
-);
+Carousel.Caption = CarouselCaption;
+Carousel.Item = CarouselItem;
 
-DecoratedCarousel.Caption = CarouselCaption;
-DecoratedCarousel.Item = CarouselItem;
-
-export default DecoratedCarousel;
+export default bsClass('carousel', Carousel);

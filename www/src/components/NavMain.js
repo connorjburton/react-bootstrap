@@ -1,144 +1,84 @@
 import PropTypes from 'prop-types';
 import React from 'react';
+import Link from 'gatsby-link';
 
-import Navbar from 'react-bootstrap/Navbar';
-import Nav from 'react-bootstrap/Nav';
-import Tooltip from 'react-bootstrap/Tooltip';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Dropdown from 'react-bootstrap/Dropdown';
-import styled from 'astroturf';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDiscord } from '@fortawesome/free-brands-svg-icons/faDiscord';
-import { faGithub } from '@fortawesome/free-brands-svg-icons/faGithub';
+import Navbar from 'react-bootstrap/lib/Navbar';
+import Nav from 'react-bootstrap/lib/Nav';
+import FormControl from 'react-bootstrap/lib/FormControl';
 
-import logo from '../assets/logo.svg';
-
-const StyledNavbar = styled(Navbar).attrs({
-  as: 'header',
-  variant: 'dark',
-  role: 'banner',
-})`
-  @import '../css/theme.scss';
-
-  min-height: 4rem;
-  background-color: $darker;
-
-  @include media-breakpoint-up(md) {
-    position: sticky;
-    top: 0;
-    z-index: 1040;
-  }
-`;
-
-const SkipToContentLink = styled('a')`
-  composes: sr-only sr-only-focusable bg-primary text-white px-4 py-2 mr-2 from global;
-`;
-
-const StyledNavLink = styled(Nav.Link)`
-  @import '../css/theme.scss';
-
-  & + & {
-    margin-left: $spacer;
-  }
-
-  &:global(.active) {
-    font-width: 700;
-  }
-`;
-
-const StyledDropdown = styled(Dropdown)`
-  @import '../css/theme.scss';
-
-  margin-right: $spacer;
-`;
-
-const NAV_LINKS = [
-  {
-    link: '/',
-    title: 'Home',
-    exact: true,
-  },
-  {
+const NAV_LINKS = {
+  documentation: {
     link: '/getting-started/introduction',
-    title: 'Getting Started',
-  },
-  {
-    link: '/components/alerts',
-    title: 'Components',
-  },
-];
-
-const propTypes = {
-  activePage: PropTypes.string,
+    title: 'Documentation'
+  }
 };
 
+// We don't want to include react-router-bootstrap as a dependency here, so we
+// need to fudge our own `<NavItem>` substitutes, and hide unknown props from
+// them.
+
+function Wrapper({ children }) {
+  return children;
+}
+
+const propTypes = {
+  activePage: PropTypes.string
+};
+
+function attachSearch(ref) {
+  if (ref)
+    window.docsearch({
+      apiKey: '68117ff90f086cb491d7e7e984cd7b75',
+      indexName: 'react_bootstrap',
+      inputSelector: ref,
+      debug: false // Set debug to true if you want to inspect the dropdown
+    });
+}
 function NavMain({ activePage }) {
   return (
-    <StyledNavbar expand collapseOnSelect>
-      <SkipToContentLink href="#rb-docs-content" tabIndex="0">
-        Skip to content
-      </SkipToContentLink>
-      <Navbar.Brand href="/">
-        <img src={logo} alt="react-bootstrap" height={30} />
-      </Navbar.Brand>
-
-      <Nav role="navigation" id="top" className="d-none d-md-flex">
-        {NAV_LINKS.map(({ link, title, exact }) => (
-          <StyledNavLink
-            key={link}
-            href={link}
-            active={exact ? activePage === link : activePage.startsWith(link)}
-          >
-            {title}
-          </StyledNavLink>
-        ))}
-      </Nav>
-      <Nav className="ml-auto pr-md-5">
-        <StyledDropdown id="t-version">
-          <Dropdown.Toggle id="dropdown-version" variant="outline-light">
-            v{config.version} (Bootstrap{' '}
-            {config.bootstrapVersion
-              .split('.')
-              .slice(0, 2)
-              .join('.')}
-            )
-          </Dropdown.Toggle>
-          <Dropdown.Menu className="w-100">
-            <Dropdown.Item href="https://react-bootstrap-v3.netlify.com">
-              v0.32.4 (Bootstrap 3)
-            </Dropdown.Item>
-          </Dropdown.Menu>
-        </StyledDropdown>
-        <OverlayTrigger
-          placement="bottom"
-          delay={{ show: 200 }}
-          overlay={<Tooltip id="t-github">Github</Tooltip>}
-        >
-          <StyledNavLink
-            href="https://github.com/react-bootstrap/react-bootstrap"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FontAwesomeIcon icon={faGithub} size="lg" />
-            <span className="sr-only">Github</span>
-          </StyledNavLink>
-        </OverlayTrigger>
-        <OverlayTrigger
-          placement="bottom"
-          delay={{ show: 200 }}
-          overlay={<Tooltip id="t-discord">Discord</Tooltip>}
-        >
-          <StyledNavLink
-            href="https://discord.gg/0ZcbPKXt5bXLs9XK"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FontAwesomeIcon icon={faDiscord} size="lg" />
-            <span className="sr-only">Discord</span>
-          </StyledNavLink>
-        </OverlayTrigger>
-      </Nav>
-    </StyledNavbar>
+    <Navbar
+      staticTop
+      componentClass="header"
+      className="bs-docs-nav"
+      role="banner"
+    >
+      <Navbar.Header>
+        <Navbar.Brand>
+          <Link to="/">React-Bootstrap</Link>
+        </Navbar.Brand>
+        <Navbar.Toggle />
+      </Navbar.Header>
+      <Navbar.Collapse className="bs-navbar-collapse">
+        <Nav role="navigation" id="top">
+          {Object.values(NAV_LINKS).map(({ link, title }) => (
+            <Wrapper key={link}>
+              <li className={activePage.startsWith(link) ? 'active' : null}>
+                <Link to={link}>{title}</Link>
+              </li>
+            </Wrapper>
+          ))}
+          <Wrapper>
+            <li>
+              <a
+                href="https://github.com/react-bootstrap/react-bootstrap"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
+            </li>
+          </Wrapper>
+        </Nav>
+        <Navbar.Form pullRight>
+          <FormControl
+            type="search"
+            className="bs-search-bar"
+            placeholder="Search…"
+            inputRef={attachSearch}
+          />
+        </Navbar.Form>
+      </Navbar.Collapse>
+    </Navbar>
   );
 }
 

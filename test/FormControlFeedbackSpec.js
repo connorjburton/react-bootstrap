@@ -4,23 +4,39 @@ import { mount } from 'enzyme';
 import FormControl from '../src/FormControl';
 import FormGroup from '../src/FormGroup';
 
-describe('<Feedback>', () => {
+describe('<FormControl.Feedback>', () => {
   it('should render default success', () => {
     mount(
-      <FormGroup>
-        <FormControl isValid />
-        <FormControl.Feedback type="valid" />
-      </FormGroup>,
-    ).assertSingle('.valid-feedback');
+      <FormGroup validationState="success">
+        <FormControl.Feedback />
+      </FormGroup>
+    ).assertSingle('.form-control-feedback.glyphicon-ok');
+  });
+
+  it('should render default warning', () => {
+    mount(
+      <FormGroup validationState="warning">
+        <FormControl.Feedback />
+      </FormGroup>
+    ).assertSingle('.form-control-feedback.glyphicon-warning-sign');
   });
 
   it('should render default error', () => {
     mount(
-      <FormGroup>
-        <FormControl isInvalid />
-        <FormControl.Feedback type="invalid" />
-      </FormGroup>,
-    ).assertSingle('.invalid-feedback');
+      <FormGroup validationState="error">
+        <FormControl.Feedback />
+      </FormGroup>
+    ).assertSingle('.form-control-feedback.glyphicon-remove');
+  });
+
+  it('should render default validation state', () => {
+    mount(
+      <FormGroup validationState="success">
+        <div>
+          <FormControl.Feedback />
+        </div>
+      </FormGroup>
+    ).assertSingle('.form-control-feedback.glyphicon-ok');
   });
 
   it('should render custom component', () => {
@@ -28,8 +44,10 @@ describe('<Feedback>', () => {
       return <div {...props} />;
     }
 
-    mount(<FormControl.Feedback as={MyComponent} />).assertSingle(
-      'MyComponent.valid-feedback',
-    );
+    mount(
+      <FormControl.Feedback>
+        <MyComponent className="foo" />
+      </FormControl.Feedback>
+    ).assertSingle('MyComponent.foo.form-control-feedback');
   });
 });

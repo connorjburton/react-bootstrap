@@ -1,44 +1,73 @@
-import { mount } from 'enzyme';
 import React from 'react';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
+
 import ButtonGroup from '../src/ButtonGroup';
 import Button from '../src/Button';
 
+import { shouldWarn } from './helpers';
+
 describe('ButtonGroup', () => {
   it('Should output a button group', () => {
-    mount(
+    let instance = ReactTestUtils.renderIntoDocument(
       <ButtonGroup>
         <Button>Title</Button>
-      </ButtonGroup>,
-    ).assertSingle('div.btn-group');
+      </ButtonGroup>
+    );
+    assert.equal(ReactDOM.findDOMNode(instance).nodeName, 'DIV');
+    assert.ok(ReactDOM.findDOMNode(instance).className.match(/\bbtn-group\b/));
   });
 
   it('Should add size', () => {
-    mount(
-      <ButtonGroup size="lg">
+    let instance = ReactTestUtils.renderIntoDocument(
+      <ButtonGroup bsSize="large">
         <Button>Title</Button>
-      </ButtonGroup>,
-    ).assertSingle('.btn-group-lg');
+      </ButtonGroup>
+    );
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\bbtn-group-lg\b/)
+    );
   });
 
   it('Should add vertical variation', () => {
-    mount(
+    let instance = ReactTestUtils.renderIntoDocument(
       <ButtonGroup vertical>
         <Button>Title</Button>
-      </ButtonGroup>,
-    )
-      .tap(b => b.assertSingle('.btn-group-vertical'))
-      .assertNone('.btn-group');
+      </ButtonGroup>
+    );
+    assert.equal(
+      ReactDOM.findDOMNode(instance).className.trim(),
+      'btn-group-vertical'
+    );
   });
 
-  it('Should add toggle variation', () => {
-    mount(
-      <ButtonGroup toggle>
+  it('Should add block variation', () => {
+    let instance = ReactTestUtils.renderIntoDocument(
+      <ButtonGroup vertical block>
         <Button>Title</Button>
-      </ButtonGroup>,
-    ).assertSingle('.btn-group.btn-group-toggle');
+      </ButtonGroup>
+    );
+    assert.ok(ReactDOM.findDOMNode(instance).className.match(/\bbtn-block\b/));
   });
 
-  it('Should have div as default component', () => {
-    mount(<ButtonGroup />).assertSingle('div');
+  it('Should warn about block without vertical', () => {
+    shouldWarn('`block` requires `vertical` to be set to have any effect');
+
+    ReactTestUtils.renderIntoDocument(
+      <ButtonGroup block>
+        <Button>Title</Button>
+      </ButtonGroup>
+    );
+  });
+
+  it('Should add justified variation', () => {
+    let instance = ReactTestUtils.renderIntoDocument(
+      <ButtonGroup justified>
+        <Button>Title</Button>
+      </ButtonGroup>
+    );
+    assert.ok(
+      ReactDOM.findDOMNode(instance).className.match(/\bbtn-group-justified\b/)
+    );
   });
 });

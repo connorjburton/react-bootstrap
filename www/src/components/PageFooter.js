@@ -38,6 +38,7 @@ class PageFooter extends React.Component {
                   width={230}
                   height={20}
                   title="twitter"
+                  allowTransparency="true"
                   frameBorder="0"
                   scrolling="no"
                 />
@@ -53,7 +54,8 @@ class PageFooter extends React.Component {
             >
               MIT
             </a>
-            . Documentation based, in part, on{' '}
+            {'. '}
+            Documentation based, in part, on{' '}
             <a
               href="https://getbootstrap.com/docs/3.3/"
               rel="noopener noreferrer"

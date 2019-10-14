@@ -1,24 +1,37 @@
-import PropTypes from 'prop-types';
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import TabContainer from './TabContainer';
 import TabContent from './TabContent';
 import TabPane from './TabPane';
 
-/* eslint-disable react/require-render-return, react/no-unused-prop-types */
-class Tab extends React.Component {
-  static propTypes = {
-    title: PropTypes.node.isRequired,
-  };
+const propTypes = {
+  ...TabPane.propTypes,
 
+  disabled: PropTypes.bool,
+
+  title: PropTypes.node,
+
+  /**
+   * tabClassName is used as className for the associated NavItem
+   */
+  tabClassName: PropTypes.string
+};
+
+class Tab extends React.Component {
   render() {
-    throw new Error(
-      'ReactBootstrap: The `Tab` component is not meant to be rendered! ' +
-        "It's an abstract component that is only valid as a direct Child of the `Tabs` Component. " +
-        'For custom tabs components use TabPane and TabsContainer directly',
-    );
+    const props = { ...this.props };
+
+    // These props are for the parent `<Tabs>` rather than the `<TabPane>`.
+    delete props.title;
+    delete props.disabled;
+    delete props.tabClassName;
+
+    return <TabPane {...props} />;
   }
 }
+
+Tab.propTypes = propTypes;
 
 Tab.Container = TabContainer;
 Tab.Content = TabContent;

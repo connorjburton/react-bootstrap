@@ -1,8 +1,11 @@
 lib/
-node_modules/**
+dist/
+node_modules/
+es/
+amd/
+docs/assets
 coverage/
-**/node_modules/**
-www/.cache
-www/public
-www/plugins
-**/*.d.ts
+.cache/
+public/
+static/
+tmp-*-repo/

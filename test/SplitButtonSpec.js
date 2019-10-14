@@ -1,107 +1,166 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import ReactDOM from 'react-dom';
+import ReactTestUtils from 'react-dom/test-utils';
 
 import SplitButton from '../src/SplitButton';
-import DropdownItem from '../src/DropdownItem';
+import MenuItem from '../src/MenuItem';
+import Button from '../src/Button';
 
 describe('<SplitButton>', () => {
   const simple = (
     <SplitButton title="Title" id="test-id">
-      <DropdownItem>Item 1</DropdownItem>
-      <DropdownItem>Item 2</DropdownItem>
-      <DropdownItem>Item 3</DropdownItem>
-      <DropdownItem>Item 4</DropdownItem>
+      <MenuItem>Item 1</MenuItem>
+      <MenuItem>Item 2</MenuItem>
+      <MenuItem>Item 3</MenuItem>
+      <MenuItem>Item 4</MenuItem>
     </SplitButton>
   );
 
   it('should open the menu when dropdown button is clicked', () => {
-    const wrapper = mount(simple);
+    const instance = ReactTestUtils.renderIntoDocument(simple);
 
-    wrapper.assertNone('.show');
+    const toggleNode = ReactTestUtils.findRenderedDOMComponentWithClass(
+      instance,
+      'dropdown-toggle'
+    );
+    const splitButtonNode = ReactDOM.findDOMNode(instance);
 
-    wrapper.find('button.dropdown-toggle').simulate('click');
-
-    wrapper.assertSingle('div.dropdown.show');
+    splitButtonNode.className.should.not.match(/open/);
+    ReactTestUtils.Simulate.click(toggleNode);
+    splitButtonNode.className.should.match(/open/);
   });
 
   it('should not open the menu when other button is clicked', () => {
-    const wrapper = mount(simple);
+    const instance = ReactTestUtils.renderIntoDocument(simple);
 
-    wrapper.assertNone('.show');
+    const buttonNode = ReactDOM.findDOMNode(
+      ReactTestUtils.scryRenderedComponentsWithType(instance, Button)[0]
+    );
+    const splitButtonNode = ReactDOM.findDOMNode(instance);
 
-    wrapper
-      .find('button')
-      .first()
-      .simulate('click');
-
-    wrapper.assertNone('.show');
+    splitButtonNode.className.should.not.match(/open/);
+    ReactTestUtils.Simulate.click(buttonNode);
+    splitButtonNode.className.should.not.match(/open/);
   });
 
   it('should invoke onClick when SplitButton.Button is clicked (prop)', done => {
-    const wrapper = mount(
+    const instance = ReactTestUtils.renderIntoDocument(
       <SplitButton title="Title" id="test-id" onClick={() => done()}>
-        <DropdownItem>Item 1</DropdownItem>
-      </SplitButton>,
+        <MenuItem>Item 1</MenuItem>
+      </SplitButton>
     );
 
-    wrapper
-      .find('button')
-      .first()
-      .simulate('click');
+    const buttonNode = ReactDOM.findDOMNode(
+      ReactTestUtils.scryRenderedComponentsWithType(instance, Button)[0]
+    );
+    ReactTestUtils.Simulate.click(buttonNode);
   });
 
-  it('should not invoke onClick when SplitButton.Toggle is clicked (prop)', () => {
+  it('should not invoke onClick when SplitButton.Toggle is clicked (prop)', done => {
     let onClickSpy = sinon.spy();
 
-    const wrapper = mount(
+    const instance = ReactTestUtils.renderIntoDocument(
       <SplitButton title="Title" id="test-id" onClick={onClickSpy}>
-        <DropdownItem>Item 1</DropdownItem>
-      </SplitButton>,
+        <MenuItem>Item 1</MenuItem>
+      </SplitButton>
     );
 
-    wrapper.find('button.dropdown-toggle').simulate('click');
+    const toggleNode = ReactTestUtils.findRenderedDOMComponentWithClass(
+      instance,
+      'dropdown-toggle'
+    );
 
-    expect(onClickSpy.callCount).to.equal(0);
+    ReactTestUtils.Simulate.click(toggleNode);
+
+    setTimeout(() => {
+      onClickSpy.should.not.have.been.called;
+      done();
+    }, 10);
   });
 
   it('Should pass disabled to both buttons', () => {
-    mount(
+    const instance = ReactTestUtils.renderIntoDocument(
       <SplitButton title="Title" id="test-id" disabled>
-        <DropdownItem>Item 1</DropdownItem>
-      </SplitButton>,
-    )
-      .find('button[disabled]')
-      .length.should.equal(2);
+        <MenuItem>Item 1</MenuItem>
+      </SplitButton>
+    );
+
+    const toggleNode = ReactTestUtils.findRenderedDOMComponentWithClass(
+      instance,
+      'dropdown-toggle'
+    );
+
+    const buttonNode = ReactDOM.findDOMNode(
+      ReactTestUtils.scryRenderedComponentsWithType(instance, Button)[0]
+    );
+
+    expect(toggleNode.disabled).to.be.true;
+    expect(buttonNode.disabled).to.be.true;
   });
 
   it('Should set target attribute on anchor', () => {
-    mount(
+    const instance = ReactTestUtils.renderIntoDocument(
       <SplitButton
         title="Title"
         id="test-id"
         href="/some/unique-thing/"
         target="_blank"
       >
-        <DropdownItem eventKey="1">DropdownItem 1 content</DropdownItem>
-      </SplitButton>,
-    ).assertSingle('a[target="_blank"]');
+        <MenuItem eventKey="1">MenuItem 1 content</MenuItem>
+      </SplitButton>
+    );
+
+    let anchors = ReactTestUtils.scryRenderedDOMComponentsWithTag(
+      instance,
+      'a'
+    );
+    let linkElement = anchors[0];
+
+    assert.equal(linkElement.target, '_blank');
   });
 
-  it('should set accessible label on toggle', () => {
-    mount(simple)
-      .assertSingle('.sr-only')
-      .text()
-      .should.equal('Toggle dropdown');
+  it('should set aria-label on toggle from title', () => {
+    const instance = ReactTestUtils.renderIntoDocument(simple);
+
+    const toggleNode = ReactTestUtils.findRenderedDOMComponentWithClass(
+      instance,
+      'dropdown-toggle'
+    );
+    expect(toggleNode.getAttribute('aria-label')).to.equal('Title');
   });
 
   it('should set aria-label on toggle from toggleLabel', () => {
-    mount(
+    const instance = ReactTestUtils.renderIntoDocument(
       <SplitButton title="Title" id="test-id" toggleLabel="Label">
-        <DropdownItem>Item 1</DropdownItem>
-      </SplitButton>,
-    )
-      .assertSingle('.sr-only')
-      .text()
-      .should.equal('Label');
+        <MenuItem>Item 1</MenuItem>
+      </SplitButton>
+    );
+
+    const toggleNode = ReactTestUtils.findRenderedDOMComponentWithClass(
+      instance,
+      'dropdown-toggle'
+    );
+    expect(toggleNode.getAttribute('aria-label')).to.equal('Label');
+  });
+
+  it('should derive bsClass from parent', () => {
+    const instance = ReactTestUtils.renderIntoDocument(
+      <SplitButton title="title" id="test-id" bsClass="my-dropdown">
+        <MenuItem eventKey="1">MenuItem 1 content</MenuItem>
+      </SplitButton>
+    );
+
+    assert.ok(
+      ReactTestUtils.findRenderedDOMComponentWithClass(
+        instance,
+        'my-dropdown-toggle'
+      )
+    );
+    assert.ok(
+      ReactTestUtils.findRenderedDOMComponentWithClass(
+        instance,
+        'my-dropdown-menu'
+      )
+    );
   });
 });

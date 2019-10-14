@@ -1,112 +1,94 @@
 import classNames from 'classnames';
-import React, { useCallback } from 'react';
+import React, { cloneElement } from 'react';
 import PropTypes from 'prop-types';
 
-import AbstractNavItem from './AbstractNavItem';
-import { makeEventKey } from './SelectableContext';
-import { useBootstrapPrefix } from './ThemeProvider';
+import {
+  bsClass,
+  bsStyles,
+  getClassSet,
+  prefix,
+  splitBsProps
+} from './utils/bootstrapUtils';
+import { State } from './utils/StyleConfig';
 
 const propTypes = {
-  /**
-   * @default 'list-group-item'
-   */
-  bsPrefix: PropTypes.string,
-
-  /**
-   * Sets contextual classes for list item
-   * @type {('primary'|'secondary'|'success'|'danger'|'warning'|'info'|'dark'|'light')}
-   */
-  variant: PropTypes.string,
-  /**
-   * Marks a ListGroupItem as actionable, applying additional hover, active and disabled styles
-   * for links and buttons.
-   */
-  action: PropTypes.bool,
-  /**
-   * Sets list item as active
-   */
-  active: PropTypes.bool,
-
-  /**
-   * Sets list item state as disabled
-   */
-  disabled: PropTypes.bool,
-
-  eventKey: PropTypes.string,
-
+  active: PropTypes.any,
+  disabled: PropTypes.any,
+  header: PropTypes.node,
+  listItem: PropTypes.bool,
   onClick: PropTypes.func,
-
   href: PropTypes.string,
-
-  /**
-   * You can use a custom element type for this component. For none `action` items, items render as `li`.
-   * For actions the default is an achor or button element depending on whether a `href` is provided.
-   *
-   * @default {'div' | 'a' | 'button'}
-   */
-  as: PropTypes.elementType,
+  type: PropTypes.string
 };
 
 const defaultProps = {
-  variant: null,
-  active: false,
-  disabled: false,
+  listItem: false
 };
 
-const ListGroupItem = React.forwardRef(
-  (
-    {
-      bsPrefix,
+class ListGroupItem extends React.Component {
+  renderHeader(header, headingClassName) {
+    if (React.isValidElement(header)) {
+      return cloneElement(header, {
+        className: classNames(header.props.className, headingClassName)
+      });
+    }
+
+    return <h4 className={headingClassName}>{header}</h4>;
+  }
+
+  render() {
+    const {
       active,
       disabled,
       className,
-      variant,
-      action,
-      as,
-      eventKey,
-      onClick,
+      header,
+      listItem,
+      children,
       ...props
-    },
-    ref,
-  ) => {
-    bsPrefix = useBootstrapPrefix(bsPrefix, 'list-group-item');
+    } = this.props;
 
-    const handleClick = useCallback(
-      event => {
-        if (disabled) {
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
+    const [bsProps, elementProps] = splitBsProps(props);
 
-        if (onClick) onClick(event);
-      },
-      [disabled, onClick],
-    );
+    const classes = {
+      ...getClassSet(bsProps),
+      active,
+      disabled
+    };
 
-    return (
-      <AbstractNavItem
-        ref={ref}
-        {...props}
-        eventKey={makeEventKey(eventKey, props.href)}
-        // eslint-disable-next-line
-      as={as || (action ? (props.href ? 'a' : 'button') : 'div')}
-        onClick={handleClick}
-        className={classNames(
-          className,
-          bsPrefix,
-          active && 'active',
-          disabled && 'disabled',
-          variant && `${bsPrefix}-${variant}`,
-          action && `${bsPrefix}-action`,
-        )}
-      />
-    );
-  },
-);
+    let Component;
+
+    if (elementProps.href) {
+      Component = 'a';
+    } else if (elementProps.onClick) {
+      Component = 'button';
+      elementProps.type = elementProps.type || 'button';
+    } else if (listItem) {
+      Component = 'li';
+    } else {
+      Component = 'span';
+    }
+
+    elementProps.className = classNames(className, classes);
+
+    // TODO: Deprecate `header` prop.
+    if (header) {
+      return (
+        <Component {...elementProps}>
+          {this.renderHeader(header, prefix(bsProps, 'heading'))}
+
+          <p className={prefix(bsProps, 'text')}>{children}</p>
+        </Component>
+      );
+    }
+
+    return <Component {...elementProps}>{children}</Component>;
+  }
+}
 
 ListGroupItem.propTypes = propTypes;
 ListGroupItem.defaultProps = defaultProps;
-ListGroupItem.displayName = 'ListGroupItem';
 
-export default ListGroupItem;
+export default bsClass(
+  'list-group-item',
+  bsStyles(Object.values(State), ListGroupItem)
+);

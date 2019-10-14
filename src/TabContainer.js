@@ -1,57 +1,34 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
-import { useUncontrolled } from 'uncontrollable';
+import uncontrollable from 'uncontrollable';
 
-import TabContext from './TabContext';
-import SelectableContext from './SelectableContext';
+const TAB = 'tab';
+const PANE = 'pane';
 
-/* eslint-disable react/no-unused-prop-types */
+const idPropType = PropTypes.oneOfType([PropTypes.string, PropTypes.number]);
+
 const propTypes = {
   /**
    * HTML id attribute, required if no `generateChildId` prop
    * is specified.
-   *
-   * @type {string}
    */
   id(props, ...args) {
     let error = null;
 
     if (!props.generateChildId) {
-      error = PropTypes.string(props, ...args);
+      error = idPropType(props, ...args);
 
       if (!error && !props.id) {
         error = new Error(
           'In order to properly initialize Tabs in a way that is accessible ' +
             'to assistive technologies (such as screen readers) an `id` or a ' +
-            '`generateChildId` prop to TabContainer is required',
+            '`generateChildId` prop to TabContainer is required'
         );
       }
     }
 
     return error;
   },
-
-  /**
-   * Sets a default animation strategy for all children `<TabPane>`s. Use
-   * `false` to disable, `true` to enable the default `<Fade>` animation or
-   * a react-transition-group v2 `<Transition/>` component.
-   *
-   * @type {{Transition | false}}
-   * @default {Fade}
-   */
-  transition: PropTypes.oneOfType([
-    PropTypes.oneOf([false]),
-    PropTypes.elementType,
-  ]),
-  /**
-   * Wait until the first "enter" transition to mount tabs (add them to the DOM)
-   */
-  mountOnEnter: PropTypes.bool,
-
-  /**
-   * Unmount tabs (remove it from the DOM) when they are no longer visible
-   */
-  unmountOnExit: PropTypes.bool,
 
   /**
    * A function that takes an `eventKey` and `type` and returns a unique id for
@@ -62,7 +39,7 @@ const propTypes = {
    *
    * The `type` argument will either be `"tab"` or `"pane"`.
    *
-   * @defaultValue (eventKey, type) => `${props.id}-${type}-${eventKey}`
+   * @defaultValue (eventKey, type) => `${this.props.id}-${type}-${key}`
    */
   generateChildId: PropTypes.func,
 
@@ -78,57 +55,47 @@ const propTypes = {
    *
    * @controllable onSelect
    */
-  activeKey: PropTypes.any,
+  activeKey: PropTypes.any
 };
 
-const TabContainer = props => {
-  const {
-    id,
-    generateChildId: generateCustomChildId,
-    onSelect,
-    activeKey,
-    transition,
-    mountOnEnter,
-    unmountOnExit,
-    children,
-  } = useUncontrolled(props, { activeKey: 'onSelect' });
-
-  const generateChildId = useMemo(
-    () =>
-      generateCustomChildId ||
-      ((key, type) => (id ? `${id}-${type}-${key}` : null)),
-    [id, generateCustomChildId],
-  );
-
-  const tabContext = useMemo(
-    () => ({
-      onSelect,
-      activeKey,
-      transition,
-      mountOnEnter,
-      unmountOnExit,
-      getControlledId: key => generateChildId(key, 'tabpane'),
-      getControllerId: key => generateChildId(key, 'tab'),
-    }),
-    [
-      onSelect,
-      activeKey,
-      transition,
-      mountOnEnter,
-      unmountOnExit,
-      generateChildId,
-    ],
-  );
-
-  return (
-    <TabContext.Provider value={tabContext}>
-      <SelectableContext.Provider value={onSelect}>
-        {children}
-      </SelectableContext.Provider>
-    </TabContext.Provider>
-  );
+const childContextTypes = {
+  $bs_tabContainer: PropTypes.shape({
+    activeKey: PropTypes.any,
+    onSelect: PropTypes.func.isRequired,
+    getTabId: PropTypes.func.isRequired,
+    getPaneId: PropTypes.func.isRequired
+  })
 };
+
+class TabContainer extends React.Component {
+  getChildContext() {
+    const { activeKey, onSelect, generateChildId, id } = this.props;
+
+    const getId =
+      generateChildId || ((key, type) => (id ? `${id}-${type}-${key}` : null));
+
+    return {
+      $bs_tabContainer: {
+        activeKey,
+        onSelect,
+        getTabId: key => getId(key, TAB),
+        getPaneId: key => getId(key, PANE)
+      }
+    };
+  }
+
+  render() {
+    const { children, ...props } = this.props;
+
+    delete props.generateChildId;
+    delete props.onSelect;
+    delete props.activeKey;
+
+    return React.cloneElement(React.Children.only(children), props);
+  }
+}
 
 TabContainer.propTypes = propTypes;
+TabContainer.childContextTypes = childContextTypes;
 
-export default TabContainer;
+export default uncontrollable(TabContainer, { activeKey: 'onSelect' });

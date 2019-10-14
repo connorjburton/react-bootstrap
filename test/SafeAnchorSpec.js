@@ -72,14 +72,18 @@ describe('SafeAnchor', () => {
 
   it('Should disable link behavior', () => {
     let clickSpy = sinon.spy();
+    let spy = sinon.spy(SafeAnchor.prototype, 'handleClick');
 
     mount(
       <SafeAnchor disabled href="#foo" onClick={clickSpy}>
         Title
-      </SafeAnchor>,
+      </SafeAnchor>
     ).simulate('click');
 
+    expect(spy).to.have.been.calledOnce;
     expect(clickSpy).to.have.not.been.called;
+    expect(spy.getCall(0).args[0].isDefaultPrevented()).to.equal(true);
+    expect(spy.getCall(0).args[0].isPropagationStopped()).to.equal(true);
   });
 
   it('forwards provided role', () => {
@@ -112,11 +116,7 @@ describe('SafeAnchor', () => {
     expect(
       shallow(<SafeAnchor href="http://google.com" />)
         .find('a')
-        .prop('role'),
+        .prop('role')
     ).to.not.exist;
-  });
-
-  it('Should have a as default component', () => {
-    mount(<SafeAnchor />).assertSingle('a');
   });
 });

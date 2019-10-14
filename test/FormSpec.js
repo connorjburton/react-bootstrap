@@ -1,31 +1,37 @@
 import React from 'react';
-import { mount } from 'enzyme';
+import { shallow } from 'enzyme';
 
 import Form from '../src/Form';
 import FormGroup from '../src/FormGroup';
 
 describe('<Form>', () => {
+  it('should support horizontal', () => {
+    shallow(
+      <Form horizontal className="my-form">
+        <FormGroup />
+      </Form>
+    )
+      .assertSingle('form.form-horizontal.my-form')
+      .assertSingle(FormGroup);
+  });
+
   it('should support inline', () => {
-    mount(
+    shallow(
       <Form inline className="my-form">
         <FormGroup />
-      </Form>,
+      </Form>
     )
       .assertSingle('form.form-inline.my-form')
-      .assertSingle('FormGroup');
+      .assertSingle(FormGroup);
   });
 
-  it('should support custom `as`', () => {
-    mount(
-      <Form as="fieldset" className="my-form">
+  it('should support custom componentClass', () => {
+    shallow(
+      <Form componentClass="fieldset" horizontal className="my-form">
         <FormGroup />
-      </Form>,
+      </Form>
     )
-      .assertSingle('fieldset.my-form')
-      .assertSingle('FormGroup');
-  });
-
-  it('Should have form as default component', () => {
-    mount(<Form />).assertSingle('form');
+      .assertSingle('fieldset.form-horizontal.my-form')
+      .assertSingle(FormGroup);
   });
 });
